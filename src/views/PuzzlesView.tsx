@@ -1,0 +1,333 @@
+import React, { useState, useEffect } from 'react';
+import { Puzzle } from '../types';
+import { PUZZLES_LIST, getDailyPuzzle, getFormattedTodayDate } from '../data/puzzlesData';
+import { Chess, Square } from 'chess.js';
+import { ChessBoard } from '../components/ChessBoard';
+import { sounds } from '../utils/audio';
+import { incrementPuzzleSolved, getUserStats } from '../utils/storage';
+import confetti from 'canvas-confetti';
+import {
+  Puzzle as PuzzleIcon,
+  Flame,
+  CheckCircle2,
+  AlertCircle,
+  Lightbulb,
+  Eye,
+  RotateCcw,
+  Sparkles,
+  ChevronRight,
+  Filter,
+} from 'lucide-react';
+
+export const PuzzlesView: React.FC = () => {
+  const [currentPuzzle, setCurrentPuzzle] = useState<Puzzle>(getDailyPuzzle());
+  const [chess, setChess] = useState<Chess>(new Chess(currentPuzzle.initialFen));
+  const [solutionStepIndex, setSolutionStepIndex] = useState<number>(0);
+  const [showSolution, setShowSolution] = useState<boolean>(false);
+  const [showHint, setShowHint] = useState<boolean>(false);
+  const [puzzleState, setPuzzleState] = useState<'solving' | 'correct' | 'failed'>('solving');
+  const [feedbackMessage, setFeedbackMessage] = useState<string>('');
+  const [selectedTheme, setSelectedTheme] = useState<string>('Todos');
+  const [stats, setStats] = useState(getUserStats());
+
+  useEffect(() => {
+    loadPuzzle(currentPuzzle);
+  }, [currentPuzzle]);
+
+  const loadPuzzle = (puz: Puzzle) => {
+    const newChess = new Chess(puz.initialFen);
+    setChess(newChess);
+    setSolutionStepIndex(0);
+    setShowSolution(false);
+    setShowHint(false);
+    setPuzzleState('solving');
+    setFeedbackMessage(
+      `Vez das ${puz.turn === 'w' ? 'brancas' : 'pretas'}. Encontre o melhor lance!`
+    );
+  };
+
+  const handlePuzzleMove = (moveData: { from: string; to: string; promotion?: string }): boolean => {
+    if (puzzleState === 'correct') return false;
+
+    const expectedSan = currentPuzzle.movesSan[solutionStepIndex];
+    const testChess = new Chess(chess.fen());
+
+    try {
+      const moveResult = testChess.move({
+        from: moveData.from as Square,
+        to: moveData.to as Square,
+        promotion: moveData.promotion || 'q',
+      });
+
+      if (!moveResult) return false;
+
+      // Check if move matches expected solution
+      if (moveResult.san === expectedSan) {
+        sounds.playMove();
+        const nextStep = solutionStepIndex + 1;
+        setSolutionStepIndex(nextStep);
+        setChess(testChess);
+
+        // If puzzle is finished
+        if (nextStep >= currentPuzzle.movesSan.length) {
+          sounds.playVictory();
+          setPuzzleState('correct');
+          setFeedbackMessage('🎉 Excelente! Você encontrou a solução perfeita!');
+          incrementPuzzleSolved(true);
+          setStats(getUserStats());
+
+          confetti({
+            particleCount: 80,
+            spread: 60,
+            origin: { y: 0.6 },
+            colors: ['#8AA7E1', '#BDE7C9', '#FFD6E0'],
+          });
+          return true;
+        }
+
+        // Opponent auto-reply
+        setFeedbackMessage('Boa jogada! O oponente respondeu...');
+        setTimeout(() => {
+          if (nextStep < currentPuzzle.movesSan.length) {
+            const oppMoveSan = currentPuzzle.movesSan[nextStep];
+            const autoChess = new Chess(testChess.fen());
+            const autoRes = autoChess.move(oppMoveSan);
+            if (autoRes) {
+              if (autoRes.captured) sounds.playCapture();
+              else sounds.playMove();
+              setChess(autoChess);
+              setSolutionStepIndex(nextStep + 1);
+              setFeedbackMessage('Sua vez novamente. Encontre o golpe final!');
+            }
+          }
+        }, 500);
+
+        return true;
+      } else {
+        // Incorrect Move
+        sounds.playDefeat();
+        setPuzzleState('failed');
+        setFeedbackMessage('❌ Lance incorreto. Tente novamente ou use uma dica!');
+        incrementPuzzleSolved(false);
+        setStats(getUserStats());
+        return false;
+      }
+    } catch {
+      return false;
+    }
+  };
+
+  const handleRevealSolution = () => {
+    setShowSolution(true);
+    sounds.playHint();
+  };
+
+  const handleNextPuzzle = () => {
+    const currentIndex = PUZZLES_LIST.findIndex((p) => p.id === currentPuzzle.id);
+    const nextIndex = (currentIndex + 1) % PUZZLES_LIST.length;
+    setCurrentPuzzle(PUZZLES_LIST[nextIndex]);
+  };
+
+  const filteredPuzzles = PUZZLES_LIST.filter((p) => {
+    if (selectedTheme === 'Todos') return true;
+    return p.theme === selectedTheme;
+  });
+
+  const themes = ['Todos', 'Mate em 1', 'Mate em 2', 'Garfo', 'Cravada', 'Ataque Descoberto', 'Fim de Jogo'];
+
+  return (
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 animate-fadeIn">
+      {/* Top Header Card */}
+      <div className="bg-white rounded-3xl p-6 border border-[#DDE3EA] shadow-xs flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-[#FFD6E0]/50 border border-[#FFD6E0] flex items-center justify-center text-[#9F1239]">
+            <PuzzleIcon className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900">Puzzle do Dia</h1>
+              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#FFD6E0] text-[#9F1239]">
+                {getFormattedTodayDate()}
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Tema: <span className="font-bold text-slate-700">{currentPuzzle.theme}</span> • Rating: ~{currentPuzzle.rating}
+            </p>
+          </div>
+        </div>
+
+        {/* Streak & Stats */}
+        <div className="flex items-center gap-3 bg-[#F7F9FC] p-2 rounded-2xl border border-[#DDE3EA]">
+          <div className="flex items-center gap-2 px-3 py-1 bg-white rounded-xl shadow-xs border border-slate-200/60">
+            <Flame className="w-4 h-4 text-amber-500 fill-amber-500" />
+            <span className="text-xs font-bold text-slate-800">{stats.puzzleStreak} dias</span>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1 bg-white rounded-xl shadow-xs border border-slate-200/60">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <span className="text-xs font-bold text-slate-800">{stats.puzzlesSolved} resolvidos</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Grid: Board + Puzzle Details */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left: Tactical Board (Matching Brand Guide Mockup) */}
+        <div className="lg:col-span-6 flex flex-col items-center">
+          <ChessBoard
+            chess={chess}
+            onMove={handlePuzzleMove}
+            orientation={currentPuzzle.turn === 'w' ? 'white' : 'black'}
+          />
+
+          {/* Turn and Goal Banner */}
+          <div className="w-full max-w-[560px] mt-4 text-center">
+            <div
+              className={`p-4 rounded-2xl border transition-all ${
+                puzzleState === 'correct'
+                  ? 'bg-[#BDE7C9]/40 border-[#BDE7C9] text-[#166534]'
+                  : puzzleState === 'failed'
+                  ? 'bg-[#FFD6E0]/40 border-[#FFD6E0] text-[#9F1239]'
+                  : 'bg-white border-[#DDE3EA] text-slate-800'
+              }`}
+            >
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                {currentPuzzle.turn === 'w' ? 'Vez das brancas' : 'Vez das pretas'}
+              </div>
+              <div className="text-sm font-black mb-1">
+                {puzzleState === 'correct'
+                  ? 'Desafio Concluído!'
+                  : puzzleState === 'failed'
+                  ? 'Tente Novamente'
+                  : 'Encontre o melhor lance!'}
+              </div>
+              <p className="text-xs opacity-90">{feedbackMessage}</p>
+            </div>
+
+            {/* Action Buttons: VER SOLUÇÃO | DICA | PRÓXIMO */}
+            <div className="grid grid-cols-3 gap-2 mt-3">
+              <button
+                id="reveal-solution-btn"
+                onClick={handleRevealSolution}
+                className="py-3 px-3 bg-[#8AA7E1] hover:bg-[#7292D6] active:scale-95 text-white font-bold text-xs rounded-2xl shadow-xs transition-all flex items-center justify-center gap-1.5"
+              >
+                <Eye className="w-4 h-4" />
+                <span>VER SOLUÇÃO</span>
+              </button>
+
+              <button
+                onClick={() => setShowHint(true)}
+                className="py-3 px-3 bg-[#FFF1C7] hover:bg-[#FFE699] text-[#854D0E] font-bold text-xs rounded-2xl transition-all flex items-center justify-center gap-1.5 border border-[#EAB308]/30"
+              >
+                <Lightbulb className="w-4 h-4" />
+                <span>DICA</span>
+              </button>
+
+              <button
+                onClick={handleNextPuzzle}
+                className="py-3 px-3 bg-white hover:bg-slate-50 border border-[#DDE3EA] text-slate-700 font-bold text-xs rounded-2xl transition-all flex items-center justify-center gap-1.5"
+              >
+                <span>PRÓXIMO</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Explanations, Hints, & Puzzle Library */}
+        <div className="lg:col-span-6 space-y-4">
+          {/* Puzzle Info & Hint Card */}
+          <div className="bg-white rounded-3xl p-5 border border-[#DDE3EA] shadow-xs">
+            <h3 className="text-sm font-bold text-slate-800 mb-1">{currentPuzzle.title}</h3>
+            <p className="text-xs text-slate-600 leading-relaxed mb-4">
+              {currentPuzzle.description}
+            </p>
+
+            {/* Hint Box */}
+            {showHint && (
+              <div className="p-3.5 bg-[#FFF1C7]/50 rounded-2xl border border-[#EAB308]/30 mb-4 animate-fadeIn">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#854D0E] mb-1">
+                  <Lightbulb className="w-4 h-4" />
+                  <span>Dica Tática:</span>
+                </div>
+                <p className="text-xs text-[#854D0E] leading-relaxed">{currentPuzzle.hint}</p>
+              </div>
+            )}
+
+            {/* Revealed Solution */}
+            {showSolution && (
+              <div className="p-3.5 bg-[#BDE7C9]/40 rounded-2xl border border-[#BDE7C9] animate-fadeIn">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#166534] mb-1">
+                  <Sparkles className="w-4 h-4" />
+                  <span>Solução Completa:</span>
+                </div>
+                <div className="flex items-center gap-2 font-mono font-bold text-sm text-[#166534] mb-2">
+                  {currentPuzzle.movesSan.join(' → ')}
+                </div>
+                <p className="text-xs text-slate-700 leading-relaxed">
+                  {currentPuzzle.solutionExplanation}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Banco de Puzzles Curados */}
+          <div className="bg-white rounded-3xl p-5 border border-[#DDE3EA] shadow-xs">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                Banco de Puzzles Táticos
+              </h3>
+              <span className="text-xs font-semibold text-slate-500">
+                {filteredPuzzles.length} disponíveis
+              </span>
+            </div>
+
+            {/* Theme filter pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-3">
+              {themes.map((th) => (
+                <button
+                  key={th}
+                  onClick={() => setSelectedTheme(th)}
+                  className={`text-[11px] font-bold px-3 py-1 rounded-full whitespace-nowrap transition-all ${
+                    selectedTheme === th
+                      ? 'bg-[#8AA7E1] text-white shadow-xs'
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                  }`}
+                >
+                  {th}
+                </button>
+              ))}
+            </div>
+
+            {/* Puzzles List */}
+            <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+              {filteredPuzzles.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => setCurrentPuzzle(p)}
+                  className={`w-full p-3 rounded-2xl text-left border transition-all flex items-center justify-between ${
+                    p.id === currentPuzzle.id
+                      ? 'bg-[#EDE7FF] border-[#8B5CF6]/40 text-slate-900 shadow-xs'
+                      : 'bg-[#F7F9FC] hover:bg-slate-100 border-[#DDE3EA] text-slate-700'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-xs text-slate-800">{p.title}</span>
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white text-slate-600 border border-slate-200">
+                        {p.theme}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-slate-400">
+                      Vez das {p.turn === 'w' ? 'Brancas' : 'Pretas'} • Rating ~{p.rating}
+                    </span>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-slate-400" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

@@ -1,0 +1,6 @@
+{
+  "name": "ChessLab",
+  "description": "Plataforma de xadrez para jogar contra bots inteligentes, aprender com dicas em tempo real, estudar aberturas e resolver puzzles táticos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
