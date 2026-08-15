@@ -10,7 +10,7 @@ export interface Bot {
   id: string;
   name: string;
   avatarSeed: string;
-  avatarStyle?: 'bottts' | 'bottts-neutral' | 'adventurer' | 'pixel-art';
+  avatarStyle?: 'voxel-art' | 'voxel-bot';
   level: number; // 1 to 20
   rating: number;
   personality: BotPersonality;

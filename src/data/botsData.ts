@@ -116,7 +116,7 @@ export const BOTS_LIST: Bot[] = [
   {
     id: 'zenith',
     name: 'Zenith',
-    avatarSeed: 'ZenithPeace',
+    avatarSeed: 'vocaelse',
     level: 10,
     rating: 1380,
     personality: 'Calmo',
@@ -214,9 +214,9 @@ export const BOTS_LIST: Bot[] = [
 ];
 
 export function getBotAvatarUrl(seed: string): string {
-  return `https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(seed)}&backgroundColor=8aa7e1,a6c8ff,cdb4db,ffd6e0,bde7c9,fff1c7,ede7ff&radius=16`;
+  return `https://api.dicebear.com/10.x/voxel-art/svg?seed=${encodeURIComponent(seed)}&backgroundColor=8aa7e1,a6c8ff,cdb4db,ffd6e0,bde7c9,fff1c7,ede7ff&radius=16`;
 }
 
 export function getUserAvatarUrl(): string {
-  return `https://api.dicebear.com/9.x/bottts/svg?seed=ChessLabHero&backgroundColor=8aa7e1&radius=16`;
+  return `https://api.dicebear.com/10.x/voxel-art/svg?seed=ChessLabHero&backgroundColor=8aa7e1&radius=16`;
 }
