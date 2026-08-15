@@ -1,250 +1,6 @@
-import { Chess, Move, Square } from 'chess.js';
+import { Chess, Move } from 'chess.js';
 import { MoveAnalysis, MoveQuality } from '../types';
-
-// Piece value mapping in centipawns
-const PIECE_VALUES: Record<string, number> = {
-  p: 100,
-  n: 320,
-  b: 330,
-  r: 500,
-  q: 900,
-  k: 20000,
-};
-
-// Piece Square Tables (White's perspective; flipped for Black)
-const PAWN_TABLE = [
-  0,  0,  0,  0,  0,  0,  0,  0,
-  50, 50, 50, 50, 50, 50, 50, 50,
-  10, 10, 20, 30, 30, 20, 10, 10,
-   5,  5, 10, 25, 25, 10,  5,  5,
-   0,  0,  0, 20, 20,  0,  0,  0,
-   5, -5,-10,  0,  0,-10, -5,  5,
-   5, 10, 10,-20,-20, 10, 10,  5,
-   0,  0,  0,  0,  0,  0,  0,  0
-];
-
-const KNIGHT_TABLE = [
-  -50,-40,-30,-30,-30,-30,-40,-50,
-  -40,-20,  0,  0,  0,  0,-20,-40,
-  -30,  0, 10, 15, 15, 10,  0,-30,
-  -30,  5, 15, 20, 20, 15,  5,-30,
-  -30,  0, 15, 20, 20, 15,  0,-30,
-  -30,  5, 10, 15, 15, 10,  5,-30,
-  -40,-20,  0,  5,  5,  0,-20,-40,
-  -50,-40,-30,-30,-30,-30,-40,-50
-];
-
-const BISHOP_TABLE = [
-  -20,-10,-10,-10,-10,-10,-10,-20,
-  -10,  0,  0,  0,  0,  0,  0,-10,
-  -10,  0,  5, 10, 10,  5,  0,-10,
-  -10,  5,  5, 10, 10,  5,  5,-10,
-  -10,  0, 10, 10, 10, 10,  0,-10,
-  -10, 10, 10, 10, 10, 10, 10,-10,
-  -10,  5,  0,  0,  0,  0,  5,-10,
-  -20,-10,-10,-10,-10,-10,-10,-20
-];
-
-const ROOK_TABLE = [
-  0,  0,  0,  0,  0,  0,  0,  0,
-  5, 10, 10, 10, 10, 10, 10,  5,
- -5,  0,  0,  0,  0,  0,  0, -5,
- -5,  0,  0,  0,  0,  0,  0, -5,
- -5,  0,  0,  0,  0,  0,  0, -5,
- -5,  0,  0,  0,  0,  0,  0, -5,
- -5,  0,  0,  0,  0,  0,  0, -5,
-  0,  0,  0,  5,  5,  0,  0,  0
-];
-
-const QUEEN_TABLE = [
-  -20,-10,-10, -5, -5,-10,-10,-20,
-  -10,  0,  0,  0,  0,  0,  0,-10,
-  -10,  0,  5,  5,  5,  5,  0,-10,
-   -5,  0,  5,  5,  5,  5,  0, -5,
-    0,  0,  5,  5,  5,  5,  0, -5,
-  -10,  5,  5,  5,  5,  5,  0,-10,
-  -10,  0,  5,  0,  0,  0,  0,-10,
-  -20,-10,-10, -5, -5,-10,-10,-20
-];
-
-const KING_TABLE_MIDDLE = [
-  -30,-40,-40,-50,-50,-40,-40,-30,
-  -30,-40,-40,-50,-50,-40,-40,-30,
-  -30,-40,-40,-50,-50,-40,-40,-30,
-  -30,-40,-40,-50,-50,-40,-40,-30,
-  -20,-30,-30,-40,-40,-30,-30,-20,
-  -10,-20,-20,-20,-20,-20,-20,-10,
-   20, 20,  0,  0,  0,  0, 20, 20,
-   20, 30, 10,  0,  0, 10, 30, 20
-];
-
-function getSquareIndex(square: string): number {
-  const file = square.charCodeAt(0) - 'a'.charCodeAt(0);
-  const rank = 8 - parseInt(square[1]);
-  return rank * 8 + file;
-}
-
-/**
- * Static evaluation of a board position from White's perspective (+ means White is better)
- */
-export function evaluateBoard(chess: Chess): number {
-  if (chess.isGameOver()) {
-    if (chess.isCheckmate()) {
-      return chess.turn() === 'w' ? -100000 : 100000;
-    }
-    return 0; // Draw (stalemate, repetition, 50-move, insufficient material)
-  }
-
-  let totalScore = 0;
-  const board = chess.board();
-
-  for (let r = 0; r < 8; r++) {
-    for (let c = 0; c < 8; c++) {
-      const piece = board[r][c];
-      if (!piece) continue;
-
-      const squareIndex = r * 8 + c;
-      const flippedIndex = (7 - r) * 8 + c;
-      const isWhite = piece.color === 'w';
-
-      let pieceVal = PIECE_VALUES[piece.type] || 0;
-      let positionalBonus = 0;
-
-      switch (piece.type) {
-        case 'p':
-          positionalBonus = isWhite ? PAWN_TABLE[squareIndex] : PAWN_TABLE[flippedIndex];
-          break;
-        case 'n':
-          positionalBonus = isWhite ? KNIGHT_TABLE[squareIndex] : KNIGHT_TABLE[flippedIndex];
-          break;
-        case 'b':
-          positionalBonus = isWhite ? BISHOP_TABLE[squareIndex] : BISHOP_TABLE[flippedIndex];
-          break;
-        case 'r':
-          positionalBonus = isWhite ? ROOK_TABLE[squareIndex] : ROOK_TABLE[flippedIndex];
-          break;
-        case 'q':
-          positionalBonus = isWhite ? QUEEN_TABLE[squareIndex] : QUEEN_TABLE[flippedIndex];
-          break;
-        case 'k':
-          positionalBonus = isWhite ? KING_TABLE_MIDDLE[squareIndex] : KING_TABLE_MIDDLE[flippedIndex];
-          break;
-      }
-
-      const val = pieceVal + positionalBonus;
-      totalScore += isWhite ? val : -val;
-    }
-  }
-
-  // Small bonus for mobility
-  const legalMoves = chess.moves().length;
-  totalScore += chess.turn() === 'w' ? legalMoves * 2 : -legalMoves * 2;
-
-  return totalScore;
-}
-
-/**
- * Quiescence search to handle captures and quiet positions
- */
-function quiescence(chess: Chess, alpha: number, beta: number, isMaximizing: boolean, depth = 2): number {
-  const standPat = evaluateBoard(chess);
-  if (depth === 0) return standPat;
-
-  if (isMaximizing) {
-    if (standPat >= beta) return beta;
-    if (alpha < standPat) alpha = standPat;
-
-    const moves = chess.moves({ verbose: true }).filter(m => m.captured);
-    for (const move of moves) {
-      chess.move(move);
-      const score = quiescence(chess, alpha, beta, false, depth - 1);
-      chess.undo();
-
-      if (score >= beta) return beta;
-      if (score > alpha) alpha = score;
-    }
-    return alpha;
-  } else {
-    if (standPat <= alpha) return alpha;
-    if (beta > standPat) beta = standPat;
-
-    const moves = chess.moves({ verbose: true }).filter(m => m.captured);
-    for (const move of moves) {
-      chess.move(move);
-      const score = quiescence(chess, alpha, beta, true, depth - 1);
-      chess.undo();
-
-      if (score <= alpha) return alpha;
-      if (score < beta) beta = score;
-    }
-    return beta;
-  }
-}
-
-/**
- * Minimax with Alpha-Beta pruning
- */
-function minimax(
-  chess: Chess,
-  depth: number,
-  alpha: number,
-  beta: number,
-  isMaximizing: boolean
-): { score: number; bestMove?: Move } {
-  if (depth === 0 || chess.isGameOver()) {
-    return { score: quiescence(chess, alpha, beta, isMaximizing) };
-  }
-
-  const moves = chess.moves({ verbose: true });
-  if (moves.length === 0) {
-    return { score: evaluateBoard(chess) };
-  }
-
-  // Move ordering: sort captures and checks first
-  moves.sort((a, b) => {
-    let scoreA = 0;
-    let scoreB = 0;
-    if (a.captured) scoreA += (PIECE_VALUES[a.captured] || 0) * 10 - (PIECE_VALUES[a.piece] || 0);
-    if (b.captured) scoreB += (PIECE_VALUES[b.captured] || 0) * 10 - (PIECE_VALUES[b.piece] || 0);
-    if (a.san.includes('+')) scoreA += 50;
-    if (b.san.includes('+')) scoreB += 50;
-    return scoreB - scoreA;
-  });
-
-  let bestMove: Move = moves[0];
-
-  if (isMaximizing) {
-    let maxEval = -Infinity;
-    for (const move of moves) {
-      chess.move(move);
-      const { score } = minimax(chess, depth - 1, alpha, beta, false);
-      chess.undo();
-
-      if (score > maxEval) {
-        maxEval = score;
-        bestMove = move;
-      }
-      alpha = Math.max(alpha, score);
-      if (beta <= alpha) break;
-    }
-    return { score: maxEval, bestMove };
-  } else {
-    let minEval = Infinity;
-    for (const move of moves) {
-      chess.move(move);
-      const { score } = minimax(chess, depth - 1, alpha, beta, true);
-      chess.undo();
-
-      if (score < minEval) {
-        minEval = score;
-        bestMove = move;
-      }
-      beta = Math.min(beta, score);
-      if (beta <= alpha) break;
-    }
-    return { score: minEval, bestMove };
-  }
-}
+import { getBestMoves } from './stockfishEngine';
 
 /**
  * Generates natural language pedagogical explanation in Portuguese for why a move is good
@@ -333,79 +89,132 @@ export function generateMoveExplanation(move: Move, chess: Chess): string {
 }
 
 /**
- * Finds the best move and calculates evaluation
+ * Finds the best move and calculates evaluation using Stockfish
  */
-export function findBestMove(
+export async function findBestMove(
   chess: Chess,
   searchDepth = 3
-): { bestMove: Move | null; score: number; evaluationFormatted: string } {
-  const isWhite = chess.turn() === 'w';
-  const { score, bestMove } = minimax(chess, searchDepth, -Infinity, Infinity, isWhite);
+): Promise<{ bestMove: Move | null; score: number; evaluationFormatted: string }> {
+  const bestMoves = await getBestMoves(chess.fen(), searchDepth, 1);
+  
+  if (bestMoves.length === 0) {
+    return {
+      bestMove: null,
+      score: 0,
+      evaluationFormatted: '0.00',
+    };
+  }
 
-  const evalInPawns = score / 100;
+  const { move: uciMove, evaluationCp } = bestMoves[0];
+  
+  // Convert UCI move to chess.js Move
+  const from = uciMove.substring(0, 2);
+  const to = uciMove.substring(2, 4);
+  const promotion = uciMove.length > 4 ? uciMove[4] : undefined;
+  
+  const moveResult = chess.move({ from, to, promotion });
+  chess.undo(); // Undo to restore board state
+
+  const evalInPawns = evaluationCp / 100;
   const formattedScore = evalInPawns >= 0 ? `+${evalInPawns.toFixed(2)}` : `${evalInPawns.toFixed(2)}`;
 
   return {
-    bestMove: bestMove || null,
-    score,
+    bestMove: moveResult || null,
+    score: evaluationCp,
     evaluationFormatted: formattedScore,
   };
 }
 
 /**
- * Selects a move for a bot based on skill level and blunder rate
+ * Selects a move for a bot based on skill level and blunder rate using Stockfish MultiPV
  */
-export function getBotMove(
+export async function getBotMove(
   chess: Chess,
+  botName: string,
   skillLevel: number, // 1 to 20
   blunderRate: number,
   depth: number
-): { move: Move; evaluationFormatted: string } {
+): Promise<{ move: Move; evaluationFormatted: string }> {
   const legalMoves = chess.moves({ verbose: true });
   if (legalMoves.length === 0) {
     throw new Error('No legal moves available');
   }
 
-  // If bot is lower level and triggers blunder rate, pick a slightly weaker legal move
-  const shouldBlunder = Math.random() < blunderRate;
-
-  if (shouldBlunder && legalMoves.length > 1) {
-    // Pick a non-blunder checkmate if possible, else random legal move
-    const candidateMoves = legalMoves.filter(m => !m.san.includes('#'));
-    const chosen = candidateMoves.length > 0
-      ? candidateMoves[Math.floor(Math.random() * candidateMoves.length)]
-      : legalMoves[Math.floor(Math.random() * legalMoves.length)];
-
-    const currentScore = evaluateBoard(chess) / 100;
-    const formatted = currentScore >= 0 ? `+${currentScore.toFixed(2)}` : `${currentScore.toFixed(2)}`;
-    return { move: chosen, evaluationFormatted: formatted };
+  // Get multiple candidate moves using MultiPV
+  const multiPvCount = 3;
+  const bestMoves = await getBestMoves(chess.fen(), depth, multiPvCount);
+  
+  if (bestMoves.length === 0) {
+    // Fallback to random legal move if Stockfish fails
+    const chosen = legalMoves[Math.floor(Math.random() * legalMoves.length)];
+    return { move: chosen, evaluationFormatted: '0.00' };
   }
 
-  const { bestMove, score } = findBestMove(chess, Math.max(1, depth));
-  const chosenMove = bestMove || legalMoves[0];
-  const evalInPawns = score / 100;
+  // Sort candidates by evaluation (best first)
+  // evaluationCp is from White's perspective, so Black wants the LOWEST evaluation
+  const isBlack = chess.turn() === 'b';
+  const sortedCandidates = [...bestMoves].sort((a, b) => 
+    isBlack ? a.evaluationCp - b.evaluationCp : b.evaluationCp - a.evaluationCp
+  );
+  
+  // Determine if bot should blunder
+  const shouldBlunder = Math.random() < blunderRate;
+  
+  // Diagnostic logging
+  console.log(`[Bot Move] ${botName} | skillLevel: ${skillLevel}, blunderRate: ${blunderRate}, depth: ${depth}`);
+  console.log(`[Bot Move] Candidates:`, sortedCandidates.map(c => `${c.move} (${(c.evaluationCp / 100).toFixed(2)})`).join(', '));
+  
+  let chosenCandidate: { move: string; evaluationCp: number };
+  
+  if (shouldBlunder && sortedCandidates.length > 1) {
+    // Pick from worst candidates (but avoid checkmate if possible)
+    const nonMateCandidates = sortedCandidates.filter(c => Math.abs(c.evaluationCp) < 90000);
+    const candidatesToChooseFrom = nonMateCandidates.length > 0 ? nonMateCandidates : sortedCandidates;
+    // Pick from the worse half
+    const worseHalf = candidatesToChooseFrom.slice(Math.floor(candidatesToChooseFrom.length / 2));
+    chosenCandidate = worseHalf[Math.floor(Math.random() * worseHalf.length)];
+  } else {
+    // Pick from best candidates
+    chosenCandidate = sortedCandidates[0];
+  }
+  
+  // Convert UCI move to chess.js Move
+  const uciMove = chosenCandidate.move;
+  const from = uciMove.substring(0, 2);
+  const to = uciMove.substring(2, 4);
+  const promotion = uciMove.length > 4 ? uciMove[4] : undefined;
+  
+  const moveResult = chess.move({ from, to, promotion });
+  chess.undo(); // Undo to restore board state
+
+  const chosenMove = moveResult || legalMoves[0];
+  const evalInPawns = chosenCandidate.evaluationCp / 100;
   const formatted = evalInPawns >= 0 ? `+${evalInPawns.toFixed(2)}` : `${evalInPawns.toFixed(2)}`;
+  
+  console.log(`[Bot Move] Blunder occurred: ${shouldBlunder} | Chosen: ${chosenCandidate.move} (${formatted})`);
 
   return { move: chosenMove, evaluationFormatted: formatted };
 }
 
 /**
- * Analyzes a played move and returns its quality and pedagogy explanation
+ * Analyzes a played move and returns its quality and pedagogy explanation using Stockfish
  */
-export function analyzeMove(
+export async function analyzeMove(
   fenBefore: string,
   playedMoveSan: string
-): MoveAnalysis {
+): Promise<MoveAnalysis> {
   const chess = new Chess(fenBefore);
-  const evalBefore = evaluateBoard(chess);
   const isWhite = chess.turn() === 'w';
 
-  // Find the theoretical best move from this position
-  const { bestMove, score: evalBest } = findBestMove(chess, 3);
+  // Find the theoretical best move from this position using Stockfish
+  const { bestMove, score: evalBest } = await findBestMove(chess, 3);
   
   // Make the played move
   const moveResult = chess.move(playedMoveSan);
-  const evalAfter = evaluateBoard(chess);
+  
+  // Get evaluation after the move using Stockfish
+  const { score: evalAfter } = await findBestMove(chess, 1);
+  chess.undo(); // Undo to restore original state
 
   const bestMoveSan = bestMove ? bestMove.san : playedMoveSan;
   const bestMoveFrom = bestMove ? bestMove.from : '';
@@ -450,7 +259,7 @@ export function analyzeMove(
     from: moveResult ? moveResult.from : '',
     to: moveResult ? moveResult.to : '',
     quality,
-    evaluationBefore: evalBefore,
+    evaluationBefore: evalBest, // Use evalBest as evaluation before (position before move)
     evaluationAfter: evalAfter,
     bestMoveSan,
     bestMoveFrom,

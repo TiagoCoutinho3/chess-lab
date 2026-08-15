@@ -34,6 +34,7 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
   const [currentBot, setCurrentBot] = useState<Bot>(
     initialBot || BOTS_LIST.find((b) => b.id === 'bytemaster') || BOTS_LIST[0]
   );
+  const [playerColor, setPlayerColor] = useState<'w' | 'b'>('w');
   const [chess, setChess] = useState<Chess>(new Chess());
   const [gameMoves, setGameMoves] = useState<string[]>([]);
   const [moveAnalyses, setMoveAnalyses] = useState<MoveAnalysis[]>([]);
@@ -75,10 +76,10 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
     if (!isTimerRunning || gameOverResult?.isOver) return;
 
     const interval = setInterval(() => {
-      if (chess.turn() === 'w') {
+      if (chess.turn() === playerColor) {
         setPlayerTime((prev) => {
           if (prev <= 1) {
-            handleGameOver('bot', 'Tempo esgotado', '0-1');
+            handleGameOver('bot', 'Tempo esgotado', playerColor === 'w' ? '0-1' : '1-0');
             return 0;
           }
           return prev - 1;
@@ -86,7 +87,7 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
       } else {
         setBotTime((prev) => {
           if (prev <= 1) {
-            handleGameOver('player', 'Tempo esgotado do Bot', '1-0');
+            handleGameOver('player', 'Tempo esgotado do Bot', playerColor === 'w' ? '1-0' : '0-1');
             return 0;
           }
           return prev - 1;
@@ -95,7 +96,7 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isTimerRunning, chess.turn(), gameOverResult]);
+  }, [isTimerRunning, chess.turn(), gameOverResult, playerColor]);
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -137,7 +138,7 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
   const { whiteCaptured, blackCaptured } = getCapturedPieces();
 
   // Reset Game
-  const resetGame = (botToUse?: Bot) => {
+  const resetGame = (botToUse?: Bot, colorToUse?: 'w' | 'b') => {
     const newChess = new Chess();
     setChess(newChess);
     setGameMoves([]);
@@ -151,6 +152,14 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
     setIsTimerRunning(false);
     if (botToUse) {
       setCurrentBot(botToUse);
+    }
+    if (colorToUse) {
+      setPlayerColor(colorToUse);
+    }
+    
+    // If player chose black, bot (white) moves first
+    if (colorToUse === 'b' || (colorToUse === undefined && playerColor === 'b')) {
+      setTimeout(() => triggerBotMove(newChess), 500);
     }
   };
 
@@ -180,7 +189,7 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
         botName: currentBot.name,
         botLevel: currentBot.level,
         botAvatarSeed: currentBot.avatarSeed,
-        playerColor: 'w',
+        playerColor: playerColor,
         result: score,
         resultReason: reason,
         movesCount: Math.ceil(gameMoves.length / 2),
@@ -200,11 +209,11 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
     (currentChessInstance: Chess) => {
       if (currentChessInstance.isGameOver()) {
         if (currentChessInstance.isCheckmate()) {
-          const isPlayerWinner = currentChessInstance.turn() === 'b';
+          const isPlayerWinner = currentChessInstance.turn() !== playerColor;
           handleGameOver(
             isPlayerWinner ? 'player' : 'bot',
             'Xeque-mate!',
-            isPlayerWinner ? '1-0' : '0-1'
+            isPlayerWinner ? (playerColor === 'w' ? '1-0' : '0-1') : (playerColor === 'w' ? '0-1' : '1-0')
           );
         } else if (currentChessInstance.isDraw()) {
           let reason = 'Empate';
@@ -217,23 +226,25 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
       }
       return false;
     },
-    [handleGameOver]
+    [handleGameOver, playerColor]
   );
 
   // Bot Turn Trigger
   const triggerBotMove = useCallback(
     (chessInstance: Chess) => {
-      if (chessInstance.isGameOver() || chessInstance.turn() !== 'b') return;
+      const botTurn = playerColor === 'w' ? 'b' : 'w';
+      if (chessInstance.isGameOver() || chessInstance.turn() !== botTurn) return;
 
       setIsBotThinking(true);
 
       // Simulate bot "thinking" delay based on personality & level (300ms - 900ms)
       const thinkTime = Math.max(350, Math.min(900, 300 + currentBot.level * 30));
 
-      setTimeout(() => {
+      setTimeout(async () => {
         try {
-          const { move: botMove } = getBotMove(
+          const { move: botMove } = await getBotMove(
             chessInstance,
+            currentBot.name,
             currentBot.level,
             currentBot.blunderRate,
             currentBot.searchDepth
@@ -267,66 +278,61 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
         }
       }, thinkTime);
     },
-    [currentBot, checkGameState]
+    [currentBot, checkGameState, playerColor]
   );
 
-  // Player Move Handler
-  const handlePlayerMove = (moveData: { from: string; to: string; promotion?: string }): boolean => {
-    if (isBotThinking || gameOverResult?.isOver || chess.turn() !== 'w') {
+  const handlePlayerMove = async (moveData: { from: string; to: string; promotion?: string }): Promise<boolean> => {
+    if (isBotThinking || gameOverResult?.isOver || chess.turn() !== playerColor) {
       return false;
     }
 
-    try {
-      const fenBefore = chess.fen();
-      const moveResult = chess.move({
-        from: moveData.from as Square,
-        to: moveData.to as Square,
-        promotion: moveData.promotion || 'q',
-      });
+    const fenBefore = chess.fen();
+    const moveResult = chess.move({
+      from: moveData.from as Square,
+      to: moveData.to as Square,
+      promotion: moveData.promotion || 'q',
+    });
 
-      if (moveResult) {
-        if (!isTimerRunning) {
-          setIsTimerRunning(true);
-        }
+    if (!moveResult) return false;
 
-        setLastMove({ from: moveResult.from, to: moveResult.to });
-        setHintMove(null);
+    // --- Update board state IMMEDIATELY (don't wait for Stockfish) ---
+    if (!isTimerRunning) setIsTimerRunning(true);
 
-        // Sound effect
-        if (moveResult.captured) {
-          sounds.playCapture();
-        } else if (chess.inCheck()) {
-          sounds.playCheck();
-        } else {
-          sounds.playMove();
-        }
+    setLastMove({ from: moveResult.from, to: moveResult.to });
+    setHintMove(null);
+    setGameMoves((prev) => [...prev, moveResult.san]);
 
-        // Analyze player move
-        const analysis = analyzeMove(fenBefore, moveResult.san);
-        setMoveAnalyses((prev) => [...prev, analysis]);
-        setGameMoves((prev) => [...prev, moveResult.san]);
-
-        const nextChess = new Chess(chess.fen());
-        setChess(nextChess);
-
-        const isOver = checkGameState(nextChess);
-        if (!isOver) {
-          triggerBotMove(nextChess);
-        }
-        return true;
-      }
-    } catch {
-      return false;
+    if (moveResult.captured) {
+      sounds.playCapture();
+    } else if (chess.inCheck()) {
+      sounds.playCheck();
+    } else {
+      sounds.playMove();
     }
-    return false;
+
+    const nextChess = new Chess(chess.fen());
+    setChess(nextChess);
+
+    const isOver = checkGameState(nextChess);
+    if (!isOver) {
+      triggerBotMove(nextChess);
+    }
+
+    // --- Analyze move in background (fire-and-forget, never blocks the game) ---
+    analyzeMove(fenBefore, moveResult.san)
+      .then((analysis) => setMoveAnalyses((prev) => [...prev, analysis]))
+      .catch(() => { /* analysis failure is non-fatal */ });
+
+    return true;
   };
 
+
   // Best Move / Hint Feature
-  const handleRequestHint = () => {
+  const handleRequestHint = async () => {
     if (chess.isGameOver() || isBotThinking) return;
 
     sounds.playHint();
-    const { bestMove, score, evaluationFormatted } = findBestMove(chess, 4);
+    const { bestMove, score, evaluationFormatted } = await findBestMove(chess, 4);
 
     if (bestMove) {
       setHintMove({ from: bestMove.from, to: bestMove.to });
@@ -365,7 +371,7 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
   const handleResign = () => {
     if (gameOverResult?.isOver) return;
     if (confirm('Tem certeza que deseja desistir da partida?')) {
-      handleGameOver('bot', 'Desistência', '0-1');
+      handleGameOver('bot', 'Desistência', playerColor === 'w' ? '0-1' : '1-0');
     }
   };
 
@@ -387,14 +393,24 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
           </div>
         </div>
 
-        <button
-          id="change-bot-btn"
-          onClick={() => setIsBotModalOpen(true)}
-          className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#F7F9FC] hover:bg-[#EDE7FF] border border-[#DDE3EA] hover:border-[#8B5CF6] text-xs font-bold text-slate-700 transition-all"
-        >
-          <Users className="w-4 h-4 text-[#8AA7E1]" />
-          <span>Trocar Oponente ({currentBot.name})</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            id="change-bot-btn"
+            onClick={() => setIsBotModalOpen(true)}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#F7F9FC] hover:bg-[#EDE7FF] border border-[#DDE3EA] hover:border-[#8B5CF6] text-xs font-bold text-slate-700 transition-all"
+          >
+            <Users className="w-4 h-4 text-[#8AA7E1]" />
+            <span>Trocar Oponente ({currentBot.name})</span>
+          </button>
+          
+          <button
+            id="change-color-btn"
+            onClick={() => resetGame(currentBot, playerColor === 'w' ? 'b' : 'w')}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#F7F9FC] hover:bg-[#EDE7FF] border border-[#DDE3EA] hover:border-[#8B5CF6] text-xs font-bold text-slate-700 transition-all"
+          >
+            <span>Jogar com {playerColor === 'w' ? 'Pretas' : 'Brancas'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Main Game Arena (Board + Sidebar) */}
@@ -462,6 +478,7 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
             disabled={isBotThinking || gameOverResult?.isOver}
             hintMove={hintMove}
             lastMove={lastMove}
+            orientation={playerColor === 'w' ? 'white' : 'black'}
           />
 
           {/* USER INFO BAR (BOTTOM) */}

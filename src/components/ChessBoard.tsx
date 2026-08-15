@@ -5,7 +5,7 @@ import { sounds } from '../utils/audio';
 
 interface ChessBoardProps {
   chess: Chess;
-  onMove: (move: { from: string; to: string; promotion?: string }) => boolean;
+  onMove: (move: { from: string; to: string; promotion?: string }) => boolean | Promise<boolean>;
   orientation?: 'white' | 'black';
   disabled?: boolean;
   hintMove?: { from: string; to: string } | null;
@@ -108,7 +108,7 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
     setLegalMoves(moves.map(m => m.to));
   };
 
-  const attemptMove = (from: string, to: string) => {
+  const attemptMove = async (from: string, to: string) => {
     const piece = chess.get(from as Square);
     if (!piece) return;
 
@@ -121,15 +121,15 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
       return;
     }
 
-    const success = onMove({ from, to });
+    const success = await onMove({ from, to });
     if (success) {
       // sounds played inside onMove handler
     }
   };
 
-  const handlePromotionChoice = (promotionPiece: 'q' | 'r' | 'b' | 'n') => {
+  const handlePromotionChoice = async (promotionPiece: 'q' | 'r' | 'b' | 'n') => {
     if (!pendingPromotion) return;
-    onMove({ from: pendingPromotion.from, to: pendingPromotion.to, promotion: promotionPiece });
+    await onMove({ from: pendingPromotion.from, to: pendingPromotion.to, promotion: promotionPiece });
     setPendingPromotion(null);
   };
 

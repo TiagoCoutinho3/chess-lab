@@ -55,7 +55,7 @@ export const BOTS_LIST: Bot[] = [
     quote: 'Vamos jogar uma partida amigável! O importante é se divertir.',
     openings: ['e4', 'd4'],
     blunderRate: 0.45,
-    searchDepth: 1,
+    searchDepth: 2,
   },
   {
     id: 'pixel',
@@ -69,7 +69,7 @@ export const BOTS_LIST: Bot[] = [
     quote: 'Quem disse que xadrez tem que ser sempre certinho? Olha esse lance!',
     openings: ['e4', 'Nf3', 'c4'],
     blunderRate: 0.35,
-    searchDepth: 2,
+    searchDepth: 3,
   },
   {
     id: 'spark',
@@ -83,7 +83,7 @@ export const BOTS_LIST: Bot[] = [
     quote: 'Cuidado com seus cavalos... adoro um bom garfo real!',
     openings: ['e4', 'd4'],
     blunderRate: 0.25,
-    searchDepth: 2,
+    searchDepth: 4,
   },
   {
     id: 'glitch',
@@ -97,7 +97,7 @@ export const BOTS_LIST: Bot[] = [
     quote: 'Um pouco de caos no tabuleiro sempre deixa as coisas mais interessantes.',
     openings: ['b3', 'f4', 'e4'],
     blunderRate: 0.18,
-    searchDepth: 3,
+    searchDepth: 5,
   },
   {
     id: 'nova',
@@ -111,7 +111,7 @@ export const BOTS_LIST: Bot[] = [
     quote: 'A melhor defesa é o ataque contínuo. Não pisque!',
     openings: ['e4', 'c4'],
     blunderRate: 0.14,
-    searchDepth: 3,
+    searchDepth: 6,
   },
   {
     id: 'zenith',
@@ -125,7 +125,7 @@ export const BOTS_LIST: Bot[] = [
     quote: 'Respire fundo. A harmonia entre suas peças é a chave da vitória.',
     openings: ['d4', 'Nf3'],
     blunderRate: 0.12,
-    searchDepth: 3,
+    searchDepth: 7,
   },
   {
     id: 'voxel',
@@ -139,7 +139,7 @@ export const BOTS_LIST: Bot[] = [
     quote: 'Vou abrir a coluna do seu rei antes do lance 15.',
     openings: ['e4', 'd4'],
     blunderRate: 0.10,
-    searchDepth: 3,
+    searchDepth: 8,
   },
   {
     id: 'bytemaster',
@@ -153,7 +153,7 @@ export const BOTS_LIST: Bot[] = [
     quote: 'Calculando a estrutura ideal de peões... vamos ver como você reage a isso.',
     openings: ['e4', 'd4', 'c4'],
     blunderRate: 0.08,
-    searchDepth: 4,
+    searchDepth: 9,
   },
   {
     id: 'titan',
@@ -167,7 +167,7 @@ export const BOTS_LIST: Bot[] = [
     quote: 'Pode tentar atacar minha fortaleza. Tudo já foi previsto.',
     openings: ['d4', 'c4', 'Nf3'],
     blunderRate: 0.05,
-    searchDepth: 4,
+    searchDepth: 10,
   },
   {
     id: 'quantum',
@@ -181,7 +181,7 @@ export const BOTS_LIST: Bot[] = [
     quote: 'Enquanto você pensa no próximo lance, eu já analisei cinco variantes.',
     openings: ['e4', 'd4'],
     blunderRate: 0.02,
-    searchDepth: 4,
+    searchDepth: 12,
   },
   {
     id: 'sage',
@@ -195,7 +195,7 @@ export const BOTS_LIST: Bot[] = [
     quote: 'No xadrez, a verdadeira sabedoria reside na paciência e precisão geométrica.',
     openings: ['d4', 'Nf3', 'c4'],
     blunderRate: 0.01,
-    searchDepth: 5,
+    searchDepth: 14,
   },
   {
     id: 'magnusbot',
@@ -209,7 +209,7 @@ export const BOTS_LIST: Bot[] = [
     quote: 'Mostre-me sua melhor preparação. Não haverá espaço para erros.',
     openings: ['e4', 'd4', 'c4', 'Nf3'],
     blunderRate: 0.0,
-    searchDepth: 5,
+    searchDepth: 18,
   },
 ];
 
