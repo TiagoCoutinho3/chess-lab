@@ -12,6 +12,7 @@ interface ChessBoardProps {
   lastMove?: { from: string; to: string } | null;
   customSquareStyles?: Record<string, string>;
   interactive?: boolean;
+  boardColors?: { light: string; dark: string };
 }
 
 export const ChessBoard: React.FC<ChessBoardProps> = ({
@@ -23,6 +24,7 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
   lastMove = null,
   customSquareStyles = {},
   interactive = true,
+  boardColors = { light: '#FFFFFF', dark: '#C2D8F7' },
 }) => {
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
   const [legalMoves, setLegalMoves] = useState<string[]>([]);
@@ -201,22 +203,27 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
             const isHintTarget = hintMove?.to === square;
             const isKingInCheck = kingInCheckSquare === square;
 
-            // Colors matching ChessLab Brand Guide:
-            // Light square: Soft cream #F3F4F8 / #FFFFFF
-            // Dark square: Soft pastel slate/blue #8AA7E1 (lightened) or #B8CEF4
-            let bgClass = isLight ? 'bg-[#FFFFFF]' : 'bg-[#C2D8F7]';
+            // Colors matching ChessLab Brand Guide or custom bot colors
+            let bgStyle: React.CSSProperties = isLight 
+              ? { backgroundColor: boardColors.light } 
+              : { backgroundColor: boardColors.dark };
+            let bgClass = '';
 
             if (isLastMoveSource || isLastMoveTarget) {
               bgClass = isLight ? 'bg-[#FFF1C7]' : 'bg-[#FFE699]';
+              bgStyle = {};
             }
             if (isSelected) {
               bgClass = 'bg-[#EDE7FF] ring-2 ring-inset ring-[#8B5CF6]';
+              bgStyle = {};
             }
             if (isHintSource || isHintTarget) {
               bgClass = 'bg-[#BDE7C9]/80 ring-2 ring-inset ring-[#166534]';
+              bgStyle = {};
             }
             if (isKingInCheck) {
               bgClass = 'bg-[#FFD6E0] ring-4 ring-inset ring-[#F43F5E] animate-pulse';
+              bgStyle = {};
             }
 
             return (
@@ -227,6 +234,7 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, square)}
                 className={`relative flex items-center justify-center cursor-pointer transition-colors duration-150 ${bgClass}`}
+                style={bgStyle}
               >
                 {/* Coordinates labels */}
                 {cIdx === 0 && (

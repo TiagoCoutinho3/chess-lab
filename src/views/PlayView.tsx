@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Chess, Square } from 'chess.js';
 import { Bot, PlayedGame, MoveAnalysis } from '../types';
-import { BOTS_LIST, getBotAvatarUrl, getUserAvatarUrl } from '../data/botsData';
+import { BOTS_LIST, getBotAvatarUrl, getUserAvatarUrl, getBoardColors } from '../data/botsData';
 import { findMatchingOpening } from '../data/openingsData';
 import { findBestMove, getBotMove, analyzeMove, generateMoveExplanation } from '../engine/chessEngine';
 import { sounds } from '../utils/audio';
@@ -479,6 +479,7 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
             hintMove={hintMove}
             lastMove={lastMove}
             orientation={playerColor === 'w' ? 'white' : 'black'}
+            boardColors={getBoardColors(currentBot)}
           />
 
           {/* USER INFO BAR (BOTTOM) */}

@@ -42,6 +42,43 @@ export const personalityColors: Record<
   },
 };
 
+export const personalityBoardColors: Record<
+  BotPersonality,
+  { light: string; dark: string }
+> = {
+  Agressivo: {
+    light: '#FFF1F2',
+    dark: '#ff4372',
+  },
+  Estratégico: {
+    light: '#F5F3FF',
+    dark: '#a384ff',
+  },
+  Calmo: {
+    light: '#F0FDF4',
+    dark: '#BDE7C9',
+  },
+  Criativo: {
+    light: '#FAF5FF',
+    dark: '#c96efd',
+  },
+  Defensivo: {
+    light: '#FEFCE8',
+    dark: '#f7b900',
+  },
+  Tático: {
+    light: '#EFF6FF',
+    dark: '#85b4ff',
+  },
+};
+
+export function getBoardColors(bot: Bot): { light: string; dark: string } {
+  if (bot.boardColors) {
+    return bot.boardColors;
+  }
+  return personalityBoardColors[bot.personality];
+}
+
 export const BOTS_LIST: Bot[] = [
   {
     id: 'rooki',

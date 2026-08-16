@@ -19,6 +19,10 @@ export interface Bot {
     text: string;
     border: string;
   };
+  boardColors?: {
+    light: string;
+    dark: string;
+  };
   description: string;
   quote: string;
   openings: string[];
