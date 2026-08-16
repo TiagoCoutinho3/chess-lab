@@ -189,7 +189,9 @@ export async function getBotMove(
 
   const chosenMove = moveResult || legalMoves[0];
   const evalInPawns = chosenCandidate.evaluationCp / 100;
-  const formatted = evalInPawns >= 0 ? `+${evalInPawns.toFixed(2)}` : `${evalInPawns.toFixed(2)}`;
+  // Invert sign for Black so positive always means "good for current player"
+  const adjustedEval = isBlack ? -evalInPawns : evalInPawns;
+  const formatted = adjustedEval >= 0 ? `+${adjustedEval.toFixed(2)}` : `${adjustedEval.toFixed(2)}`;
   
   console.log(`[Bot Move] Blunder occurred: ${shouldBlunder} | Chosen: ${chosenCandidate.move} (${formatted})`);
 
