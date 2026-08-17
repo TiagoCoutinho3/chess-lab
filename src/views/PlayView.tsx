@@ -315,6 +315,7 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
             botMoveNumber
           );
 
+          const fenBefore = chessInstance.fen();
           const result = chessInstance.move({
             from: botMove.from,
             to: botMove.to,
@@ -356,6 +357,13 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
 
             setChess(new Chess(chessInstance.fen()));
             checkGameState(chessInstance);
+
+            // Analyze bot move in background (fire-and-forget, never blocks the game)
+            analyzeMove(fenBefore, result.san)
+              .then((analysis) => {
+                setMoveAnalyses((prev) => [...prev, analysis]);
+              })
+              .catch(() => { /* analysis failure is non-fatal */ });
           }
         } catch (err) {
           console.error('Bot move failed', err);
@@ -672,7 +680,8 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
                   {Array.from({ length: Math.ceil(gameMoves.length / 2) }).map((_, idx) => {
                     const whiteMove = gameMoves[idx * 2];
                     const blackMove = gameMoves[idx * 2 + 1];
-                    const whiteAnalysis = moveAnalyses[idx];
+                    const whiteAnalysis = moveAnalyses[idx * 2];
+                    const blackAnalysis = moveAnalyses[idx * 2 + 1];
 
                     return (
                       <div
@@ -686,7 +695,12 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
                             <MoveEvaluationBadge quality={whiteAnalysis.quality} showLabel={false} />
                           )}
                         </div>
-                        <div className="flex-1 font-medium text-slate-600">{blackMove || ''}</div>
+                        <div className="flex-1 flex items-center gap-1.5 font-medium text-slate-600">
+                          <span>{blackMove || ''}</span>
+                          {blackAnalysis && (
+                            <MoveEvaluationBadge quality={blackAnalysis.quality} showLabel={false} />
+                          )}
+                        </div>
                       </div>
                     );
                   })}

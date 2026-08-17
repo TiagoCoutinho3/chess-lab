@@ -235,14 +235,14 @@ export async function analyzeMove(
   const chess = new Chess(fenBefore);
   const isWhite = chess.turn() === 'w';
 
-  // Find the theoretical best move from this position using Stockfish
-  const { bestMove, score: evalBest } = await findBestMove(chess, 3);
+  // Find the theoretical best move from this position using Stockfish at depth 18
+  const { bestMove, score: evalBest } = await findBestMove(chess, 18);
   
   // Make the played move
   const moveResult = chess.move(playedMoveSan);
   
-  // Get evaluation after the move using Stockfish
-  const { score: evalAfter } = await findBestMove(chess, 1);
+  // Get evaluation after the move using Stockfish at depth 18
+  const { score: evalAfter } = await findBestMove(chess, 18);
   chess.undo(); // Undo to restore original state
 
   const bestMoveSan = bestMove ? bestMove.san : playedMoveSan;
