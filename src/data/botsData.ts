@@ -1,4 +1,5 @@
 import { Bot, BotPersonality } from '../types';
+import { generateAvatarDataUri, generateUserAvatarDataUri, getDefaultAvatarStyle } from '../utils/avatarGenerator';
 
 export const personalityColors: Record<
   BotPersonality,
@@ -84,9 +85,11 @@ export const BOTS_LIST: Bot[] = [
     id: 'rooki',
     name: 'Rooki',
     avatarSeed: 'RookiBot',
+    avatarStyle: 'voxel-art',
     level: 2,
     rating: 600,
     personality: 'Calmo',
+    traits: ['calmo', 'ansioso'],
     personalityTagColor: personalityColors.Calmo,
     description: 'Um robô simpático dando os primeiros passos. Joga de forma tranquila e comete alguns deslizes.',
     quote: 'Vamos jogar uma partida amigável! O importante é se divertir.',
@@ -98,9 +101,11 @@ export const BOTS_LIST: Bot[] = [
     id: 'pixel',
     name: 'Pixel',
     avatarSeed: 'PixelBot3D',
+    avatarStyle: 'voxel-bot',
     level: 4,
     rating: 850,
     personality: 'Criativo',
+    traits: ['artista', 'ansioso'],
     personalityTagColor: personalityColors.Criativo,
     description: 'Adora lances inesperados e jogadas curiosas. Não se importa de arriscar.',
     quote: 'Quem disse que xadrez tem que ser sempre certinho? Olha esse lance!',
@@ -112,9 +117,11 @@ export const BOTS_LIST: Bot[] = [
     id: 'spark',
     name: 'Spark',
     avatarSeed: 'SparkBot',
+    avatarStyle: 'voxel-bot',
     level: 6,
     rating: 1050,
     personality: 'Tático',
+    traits: ['tatico', 'cabeca-quente'],
     personalityTagColor: personalityColors.Tático,
     description: 'Focado em garfos rápidos e ataques diretos nas peças indefesas.',
     quote: 'Cuidado com seus cavalos... adoro um bom garfo real!',
@@ -126,9 +133,11 @@ export const BOTS_LIST: Bot[] = [
     id: 'glitch',
     name: 'Glitch',
     avatarSeed: 'GlitchCraft',
+    avatarStyle: 'voxel-bot',
     level: 8,
     rating: 1200,
     personality: 'Criativo',
+    traits: ['artista', 'ansioso'],
     personalityTagColor: personalityColors.Criativo,
     description: 'Joga aberturas fora do padrão e tenta desequilibrar o ritmo da partida.',
     quote: 'Um pouco de caos no tabuleiro sempre deixa as coisas mais interessantes.',
@@ -140,9 +149,11 @@ export const BOTS_LIST: Bot[] = [
     id: 'nova',
     name: 'Nova',
     avatarSeed: 'NovaVoxel',
+    avatarStyle: 'voxel-art',
     level: 9,
     rating: 1300,
     personality: 'Agressivo',
+    traits: ['cabeca-quente', 'tatico'],
     personalityTagColor: personalityColors.Agressivo,
     description: 'Ataca sem piedade na ala do rei. Se você deixar uma brecha, ela vai avançar com tudo.',
     quote: 'A melhor defesa é o ataque contínuo. Não pisque!',
@@ -154,9 +165,11 @@ export const BOTS_LIST: Bot[] = [
     id: 'zenith',
     name: 'Zenith',
     avatarSeed: 'vocaelse',
+    avatarStyle: 'voxel-art',
     level: 10,
     rating: 1380,
     personality: 'Calmo',
+    traits: ['calmo', 'experiente'],
     personalityTagColor: personalityColors.Calmo,
     description: 'Pacífico e metódico. Desenvolve todas as peças antes de qualquer confronto.',
     quote: 'Respire fundo. A harmonia entre suas peças é a chave da vitória.',
@@ -168,9 +181,11 @@ export const BOTS_LIST: Bot[] = [
     id: 'voxel',
     name: 'Voxel',
     avatarSeed: 'VoxelRed',
+    avatarStyle: 'voxel-art',
     level: 11,
     rating: 1450,
     personality: 'Agressivo',
+    traits: ['cabeca-quente', 'artista'],
     personalityTagColor: personalityColors.Agressivo,
     description: 'Especialista em sacrifícios de peão por iniciativa e ataques de flanco.',
     quote: 'Vou abrir a coluna do seu rei antes do lance 15.',
@@ -182,9 +197,11 @@ export const BOTS_LIST: Bot[] = [
     id: 'bytemaster',
     name: 'ByteMaster',
     avatarSeed: 'ByteMasterAI',
+    avatarStyle: 'voxel-bot',
     level: 12,
     rating: 1550,
     personality: 'Estratégico',
+    traits: ['estrategico', 'calmo'],
     personalityTagColor: personalityColors.Estratégico,
     description: 'O bot mascote do ChessLab! Jogo sólido, excelente controle de centro e planos a médio prazo.',
     quote: 'Calculando a estrutura ideal de peões... vamos ver como você reage a isso.',
@@ -196,9 +213,11 @@ export const BOTS_LIST: Bot[] = [
     id: 'titan',
     name: 'Titan',
     avatarSeed: 'TitanShield',
+    avatarStyle: 'voxel-art',
     level: 14,
     rating: 1750,
     personality: 'Defensivo',
+    traits: ['medroso', 'estrategico'],
     personalityTagColor: personalityColors.Defensivo,
     description: 'Uma muralha impenetrável. Espera pacientemente o adversário se expor para contra-atacar.',
     quote: 'Pode tentar atacar minha fortaleza. Tudo já foi previsto.',
@@ -210,9 +229,11 @@ export const BOTS_LIST: Bot[] = [
     id: 'quantum',
     name: 'Quantum',
     avatarSeed: 'QuantumBot',
+    avatarStyle: 'voxel-bot',
     level: 16,
     rating: 1950,
     personality: 'Tático',
+    traits: ['tatico', 'experiente'],
     personalityTagColor: personalityColors.Tático,
     description: 'Visão tática aguçada. Encontra combinações profundas e mates em múltiplos lances.',
     quote: 'Enquanto você pensa no próximo lance, eu já analisei cinco variantes.',
@@ -224,9 +245,11 @@ export const BOTS_LIST: Bot[] = [
     id: 'sage',
     name: 'Sage',
     avatarSeed: 'SageMaster',
+    avatarStyle: 'voxel-art',
     level: 18,
     rating: 2200,
     personality: 'Estratégico',
+    traits: ['experiente', 'estrategico', 'calmo'],
     personalityTagColor: personalityColors.Estratégico,
     description: 'Mestre da técnica posicional e finais de jogo. Quase não comete imprecisões.',
     quote: 'No xadrez, a verdadeira sabedoria reside na paciência e precisão geométrica.',
@@ -238,9 +261,11 @@ export const BOTS_LIST: Bot[] = [
     id: 'magnusbot',
     name: 'MagnusBot',
     avatarSeed: 'MagnusGrandMaster',
+    avatarStyle: 'voxel-art',
     level: 20,
     rating: 2500,
     personality: 'Estratégico',
+    traits: ['experiente', 'estrategico', 'calmo'],
     personalityTagColor: personalityColors.Estratégico,
     description: 'O desafio supremo do ChessLab. Força máxima, jogo implacável em qualquer fase da partida.',
     quote: 'Mostre-me sua melhor preparação. Não haverá espaço para erros.',
@@ -250,10 +275,15 @@ export const BOTS_LIST: Bot[] = [
   },
 ];
 
-export function getBotAvatarUrl(seed: string): string {
-  return `https://api.dicebear.com/10.x/voxel-art/svg?seed=${encodeURIComponent(seed)}&backgroundColor=8aa7e1,a6c8ff,cdb4db,ffd6e0,bde7c9,fff1c7,ede7ff&radius=16`;
+export function getBotAvatarUrl(seed: string, botId?: string): string {
+  const style = botId ? getDefaultAvatarStyle(botId) : 'voxel-art';
+  const bot = botId ? BOTS_LIST.find((b) => b.id === botId) : undefined;
+  const avatarStyle = bot?.avatarStyle ?? style;
+  return generateAvatarDataUri(seed, avatarStyle, {
+    animationVariant: avatarStyle === 'voxel-bot' ? 'fastest' : 'none',
+  });
 }
 
 export function getUserAvatarUrl(): string {
-  return `https://api.dicebear.com/10.x/voxel-art/svg?seed=ChessLabHero&backgroundColor=8aa7e1&radius=16`;
+  return generateUserAvatarDataUri();
 }
