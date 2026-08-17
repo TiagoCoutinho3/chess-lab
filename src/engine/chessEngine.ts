@@ -1,6 +1,17 @@
 import { Chess, Move } from 'chess.js';
-import { MoveAnalysis, MoveQuality } from '../types';
+import { MoveAnalysis, MoveQuality, PersonalityTrait } from '../types';
 import { getBestMoves } from './stockfishEngine';
+import {
+  analyzeMoveFeatures,
+  getPositionContext,
+  uciToMove,
+} from './moveFeatures';
+import {
+  filterTechnicalTieCandidates,
+  getMultiPvCount,
+  scoreCandidate,
+  selectPersonalityCandidate,
+} from './personalityScoring';
 
 /**
  * Generates natural language pedagogical explanation in Portuguese for why a move is good
@@ -126,76 +137,92 @@ export async function findBestMove(
 }
 
 /**
- * Selects a move for a bot based on skill level and blunder rate using Stockfish MultiPV
+ * Selects a move for a bot based on personality traits, skill level and blunder rate using Stockfish MultiPV
  */
 export async function getBotMove(
   chess: Chess,
   botName: string,
   skillLevel: number, // 1 to 20
   blunderRate: number,
-  depth: number
-): Promise<{ move: Move; evaluationFormatted: string }> {
+  depth: number,
+  traits: PersonalityTrait[] = [],
+  moveNumber = 1
+): Promise<{ move: Move; evaluationFormatted: string; evaluationCp: number }> {
   const legalMoves = chess.moves({ verbose: true });
   if (legalMoves.length === 0) {
     throw new Error('No legal moves available');
   }
 
-  // Get multiple candidate moves using MultiPV
-  const multiPvCount = 3;
+  const multiPvCount = getMultiPvCount(depth);
   const bestMoves = await getBestMoves(chess.fen(), depth, multiPvCount);
-  
+
   if (bestMoves.length === 0) {
-    // Fallback to random legal move if Stockfish fails
     const chosen = legalMoves[Math.floor(Math.random() * legalMoves.length)];
-    return { move: chosen, evaluationFormatted: '0.00' };
+    return { move: chosen, evaluationFormatted: '0.00', evaluationCp: 0 };
   }
 
-  // Sort candidates by evaluation (best first)
-  // evaluationCp is from White's perspective, so Black wants the LOWEST evaluation
   const isBlack = chess.turn() === 'b';
-  const sortedCandidates = [...bestMoves].sort((a, b) => 
+  const sortedCandidates = [...bestMoves].sort((a, b) =>
     isBlack ? a.evaluationCp - b.evaluationCp : b.evaluationCp - a.evaluationCp
   );
-  
-  // Determine if bot should blunder
+
+  const bestEval = sortedCandidates[0].evaluationCp;
+  const botColor = chess.turn();
+  const positionContext = getPositionContext(chess, moveNumber, bestEval, botColor);
+
+  const tieCandidates = filterTechnicalTieCandidates(sortedCandidates, isBlack);
+
+  const scoredCandidates = tieCandidates.map((candidate, index) => {
+    const features =
+      analyzeMoveFeatures(chess, candidate.move, moveNumber) ?? {
+        isCapture: false,
+        isEquivalentExchange: false,
+        isCheck: false,
+        isKingAttack: false,
+        isSpeculativeSacrifice: false,
+        isOpening: moveNumber <= 10,
+        isEndgame: false,
+        isQuiet: true,
+        isPawnMove: false,
+      };
+    return {
+      ...candidate,
+      features,
+      personalityScore: scoreCandidate(traits, features, positionContext, index, tieCandidates.length),
+    };
+  });
+
+  let chosenCandidate = traits.length > 0
+    ? selectPersonalityCandidate(scoredCandidates, isBlack)
+    : tieCandidates[0];
+
   const shouldBlunder = Math.random() < blunderRate;
-  
-  // Diagnostic logging
-  console.log(`[Bot Move] ${botName} | skillLevel: ${skillLevel}, blunderRate: ${blunderRate}, depth: ${depth}`);
-  console.log(`[Bot Move] Candidates:`, sortedCandidates.map(c => `${c.move} (${(c.evaluationCp / 100).toFixed(2)})`).join(', '));
-  
-  let chosenCandidate: { move: string; evaluationCp: number };
-  
+
+  console.log(
+    `[Bot Move] ${botName} | depth: ${depth}, multiPv: ${multiPvCount}, traits: [${traits.join(', ')}]`
+  );
+  console.log(
+    `[Bot Move] Tie pool:`,
+    tieCandidates.map((c) => `${c.move} (${(c.evaluationCp / 100).toFixed(2)})`).join(', ')
+  );
+
   if (shouldBlunder && sortedCandidates.length > 1) {
-    // Pick from worst candidates (but avoid checkmate if possible)
-    const nonMateCandidates = sortedCandidates.filter(c => Math.abs(c.evaluationCp) < 90000);
+    const nonMateCandidates = sortedCandidates.filter((c) => Math.abs(c.evaluationCp) < 90000);
     const candidatesToChooseFrom = nonMateCandidates.length > 0 ? nonMateCandidates : sortedCandidates;
-    // Pick from the worse half
     const worseHalf = candidatesToChooseFrom.slice(Math.floor(candidatesToChooseFrom.length / 2));
     chosenCandidate = worseHalf[Math.floor(Math.random() * worseHalf.length)];
-  } else {
-    // Pick from best candidates
-    chosenCandidate = sortedCandidates[0];
   }
-  
-  // Convert UCI move to chess.js Move
-  const uciMove = chosenCandidate.move;
-  const from = uciMove.substring(0, 2);
-  const to = uciMove.substring(2, 4);
-  const promotion = uciMove.length > 4 ? uciMove[4] : undefined;
-  
-  const moveResult = chess.move({ from, to, promotion });
-  chess.undo(); // Undo to restore board state
 
+  const uciMove = chosenCandidate.move;
+  const moveResult = uciToMove(chess, uciMove);
   const chosenMove = moveResult || legalMoves[0];
   const evalInPawns = chosenCandidate.evaluationCp / 100;
-  // Invert sign for Black so positive always means "good for current player"
   const adjustedEval = isBlack ? -evalInPawns : evalInPawns;
   const formatted = adjustedEval >= 0 ? `+${adjustedEval.toFixed(2)}` : `${adjustedEval.toFixed(2)}`;
-  
-  console.log(`[Bot Move] Blunder occurred: ${shouldBlunder} | Chosen: ${chosenCandidate.move} (${formatted})`);
 
-  return { move: chosenMove, evaluationFormatted: formatted };
+  console.log(`[Bot Move] Blunder: ${shouldBlunder} | Chosen: ${chosenCandidate.move} (${formatted})`);
+
+  return { move: chosenMove, evaluationFormatted: formatted, evaluationCp: chosenCandidate.evaluationCp };
 }
 
 /**

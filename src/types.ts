@@ -6,14 +6,36 @@ export type BotPersonality =
   | 'Defensivo'
   | 'Tático';
 
+export type PersonalityTrait =
+  | 'ansioso'
+  | 'cabeca-quente'
+  | 'experiente'
+  | 'medroso'
+  | 'artista'
+  | 'calmo'
+  | 'estrategico'
+  | 'tatico';
+
+export const TRAIT_LABELS: Record<PersonalityTrait, string> = {
+  ansioso: 'Ansioso',
+  'cabeca-quente': 'Cabeça-quente',
+  experiente: 'Experiente',
+  medroso: 'Medroso',
+  artista: 'Artista',
+  calmo: 'Calmo',
+  estrategico: 'Estratégico',
+  tatico: 'Tático',
+};
+
 export interface Bot {
   id: string;
   name: string;
   avatarSeed: string;
-  avatarStyle?: 'voxel-art' | 'voxel-bot';
+  avatarStyle: 'voxel-art' | 'voxel-bot';
   level: number; // 1 to 20
   rating: number;
   personality: BotPersonality;
+  traits: PersonalityTrait[];
   personalityTagColor: {
     bg: string;
     text: string;
@@ -87,32 +109,16 @@ export interface PlayedGame {
 }
 
 export interface Opening {
-  id: string;
-  name: string;
   eco: string;
-  moves: string[]; // e.g. ["e4", "c5", "Nf3", "d6", "d4", "cxd4", "Nxd4", "Nf6", "Nc3", "a6"]
-  movesSan: string[];
-  fen: string;
-  mainIdea: string;
-  whitePlan: string;
-  blackPlan: string;
-  difficulty: 'Iniciante' | 'Intermediário' | 'Avançado';
-  category: 'Abertas' | 'Semi-Abertas' | 'Fechadas' | 'Flanco';
-  keyVariations?: { name: string; moves: string[] }[];
+  name: string;
+  pgn: string;
 }
 
 export interface Puzzle {
-  id: string;
-  title: string;
-  theme: 'Mate em 1' | 'Mate em 2' | 'Garfo' | 'Cravada' | 'Ataque Descoberto' | 'Ganho de Material' | 'Fim de Jogo';
+  fen: string;
+  moves: string[];
   rating: number;
-  initialFen: string;
-  turn: 'w' | 'b';
-  moves: string[]; // UCI format e.g. ["e2e4", "e7e5"] or SAN format
-  movesSan: string[];
-  description: string;
-  hint: string;
-  solutionExplanation: string;
+  themes: string[];
 }
 
 export interface UserStats {
