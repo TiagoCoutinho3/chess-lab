@@ -8,15 +8,20 @@
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "data:openings": "tsx scripts/downloadOpenings.ts",
+    "data:puzzles": "tsx scripts/processPuzzles.ts"
   },
   "dependencies": {
+    "@dicebear/core": "^10.6.0",
+    "@dicebear/styles": "^10.5.0",
     "@google/genai": "^2.4.0",
     "@tailwindcss/vite": "^4.1.14",
     "@types/canvas-confetti": "^1.9.0",
     "@vitejs/plugin-react": "^5.0.4",
     "canvas-confetti": "^1.9.4",
     "chess.js": "^1.4.0",
+    "csv-parser": "^3.2.1",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
     "lucide-react": "^0.546.0",
