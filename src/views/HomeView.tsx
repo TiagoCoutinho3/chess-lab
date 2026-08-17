@@ -1,6 +1,7 @@
-import React from 'react';
-import { ViewTab, Bot } from '../types';
-import { BOTS_LIST, getBotAvatarUrl, getUserAvatarUrl } from '../data/botsData';
+import React, { useMemo } from 'react';
+import { ViewTab, Bot, Puzzle } from '../types';
+import { BOTS_LIST } from '../data/botsData';
+import { BotAvatar, PlayerAvatar } from '../components/BotAvatar';
 import { getStoredGames, getUserStats } from '../utils/storage';
 import { getDailyPuzzle, getFormattedTodayDate } from '../data/puzzlesData';
 import {
@@ -28,6 +29,19 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onSelectBotToPla
   const dailyPuzzle = getDailyPuzzle();
   const todayDateStr = getFormattedTodayDate();
 
+  // Extract puzzle info from real data structure
+  const puzzleInfo = useMemo(() => {
+    const turn = dailyPuzzle.fen.split(' ')[1] as 'w' | 'b';
+    const primaryTheme = dailyPuzzle.themes[0] || 'Tático';
+    return {
+      title: `Puzzle do Dia`,
+      description: `Desafio tático com tema ${primaryTheme}`,
+      rating: dailyPuzzle.rating,
+      theme: primaryTheme,
+      turn: turn
+    };
+  }, [dailyPuzzle]);
+
   // Featured bot is ByteMaster (or top bot)
   const byteMaster = BOTS_LIST.find((b) => b.id === 'bytemaster') || BOTS_LIST[0];
 
@@ -36,10 +50,6 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onSelectBotToPla
       {/* Hero Welcome Section */}
       <div className="bg-gradient-to-br from-white via-[#F7F9FC] to-[#EDE7FF]/40 rounded-3xl p-6 sm:p-8 border border-[#DDE3EA] shadow-sm relative overflow-hidden">
         <div className="max-w-2xl relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EDE7FF] text-[#5B21B6] text-xs font-bold mb-3 border border-[#8B5CF6]/20">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>ChessLab v1.0 • Plataforma Pessoal</span>
-          </div>
 
           <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
             Bem-vindo de volta!
@@ -92,9 +102,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onSelectBotToPla
 
       {/* Main 4 Action Cards Grid (Matching the Brand Guide) */}
       <div>
-        <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">
-          Acesso Rápido
-        </h2>
+      
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* 1. JOGAR */}
           <div
@@ -221,8 +229,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onSelectBotToPla
                 <div className="flex items-center justify-between gap-4">
                   {/* Player side */}
                   <div className="flex items-center gap-3">
-                    <img
-                      src={getUserAvatarUrl()}
+                    <PlayerAvatar
                       alt="Você"
                       className="w-12 h-12 rounded-xl bg-[#8AA7E1]/20 p-1 border border-[#8AA7E1]/30"
                     />
@@ -247,8 +254,10 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onSelectBotToPla
                       <h4 className="font-bold text-sm text-slate-800">{lastGame.botName}</h4>
                       <span className="text-[11px] text-slate-500">Nível {lastGame.botLevel}</span>
                     </div>
-                    <img
-                      src={getBotAvatarUrl(lastGame.botAvatarSeed)}
+                    <BotAvatar
+                      seed={lastGame.botAvatarSeed}
+                      botId={lastGame.botId}
+                      mood="idle"
                       alt={lastGame.botName}
                       className="w-12 h-12 rounded-xl bg-slate-100 p-1 border border-[#DDE3EA]"
                     />
@@ -299,17 +308,17 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onSelectBotToPla
             <div className="bg-[#F7F9FC] rounded-2xl p-4 border border-[#DDE3EA]">
               <div className="flex items-start justify-between">
                 <div>
-                  <h4 className="font-bold text-sm text-slate-800">{dailyPuzzle.title}</h4>
-                  <p className="text-xs text-slate-500 mt-0.5">{dailyPuzzle.description}</p>
+                  <h4 className="font-bold text-sm text-slate-800">{puzzleInfo.title}</h4>
+                  <p className="text-xs text-slate-500 mt-0.5">{puzzleInfo.description}</p>
                 </div>
                 <span className="text-xs font-mono font-bold px-2 py-0.5 bg-white border border-[#DDE3EA] rounded-md text-slate-700">
-                  {dailyPuzzle.rating} pts
+                  {puzzleInfo.rating} pts
                 </span>
               </div>
 
               <div className="mt-4 flex items-center gap-2 text-xs font-bold text-[#166534] bg-[#BDE7C9]/40 p-2.5 rounded-xl">
                 <Sparkles className="w-4 h-4 text-[#166534]" />
-                <span>Tema: {dailyPuzzle.theme} — Vez das {dailyPuzzle.turn === 'w' ? 'Brancas' : 'Pretas'}</span>
+                <span>Tema: {puzzleInfo.theme} — Vez das {puzzleInfo.turn === 'w' ? 'Brancas' : 'Pretas'}</span>
               </div>
             </div>
           </div>

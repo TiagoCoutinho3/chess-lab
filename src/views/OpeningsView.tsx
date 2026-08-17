@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Opening } from '../types';
 import { OPENINGS_DATABASE } from '../data/openingsData';
 import { Chess, Square } from 'chess.js';
@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 
 export const OpeningsView: React.FC = () => {
-  const [selectedOpening, setSelectedOpening] = useState<Opening>(OPENINGS_DATABASE[0]);
+  const [selectedOpening, setSelectedOpening] = useState<Opening>(OPENINGS_DATABASE[1]); // Skip first entry which is a template
   const [mode, setMode] = useState<'explorar' | 'treinar'>('explorar');
   const [chess, setChess] = useState<Chess>(new Chess());
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
@@ -26,6 +26,23 @@ export const OpeningsView: React.FC = () => {
     status: 'idle' | 'correct' | 'wrong' | 'completed';
     message: string;
   }>({ status: 'idle', message: '' });
+
+  // Parse PGN to get moves
+  const movesSan = useMemo(() => {
+    if (!selectedOpening.pgn) return [];
+    const tempChess = new Chess();
+    const moves: string[] = [];
+    const pgnMoves = selectedOpening.pgn.split(/\d+\./).filter(m => m.trim());
+    pgnMoves.forEach(movePair => {
+      const individualMoves = movePair.trim().split(/\s+/);
+      individualMoves.forEach(move => {
+        if (move && move !== '*' && !move.includes('1-0') && !move.includes('0-1') && !move.includes('1/2')) {
+          moves.push(move);
+        }
+      });
+    });
+    return moves;
+  }, [selectedOpening.pgn]);
 
   // Reset board when opening or mode changes
   useEffect(() => {
@@ -44,8 +61,8 @@ export const OpeningsView: React.FC = () => {
 
   // Step Forward in Explorar Mode
   const handleStepForward = () => {
-    if (currentStepIndex < selectedOpening.movesSan.length) {
-      const nextMoveSan = selectedOpening.movesSan[currentStepIndex];
+    if (currentStepIndex < movesSan.length) {
+      const nextMoveSan = movesSan[currentStepIndex];
       const newChess = new Chess(chess.fen());
       const res = newChess.move(nextMoveSan);
       if (res) {
@@ -62,7 +79,7 @@ export const OpeningsView: React.FC = () => {
     if (currentStepIndex > 0) {
       const newChess = new Chess();
       for (let i = 0; i < currentStepIndex - 1; i++) {
-        newChess.move(selectedOpening.movesSan[i]);
+        newChess.move(movesSan[i]);
       }
       setChess(newChess);
       setCurrentStepIndex((prev) => prev - 1);
@@ -73,9 +90,9 @@ export const OpeningsView: React.FC = () => {
   // Interactive Move in Treinar Mode
   const handleTrainingMove = (moveData: { from: string; to: string; promotion?: string }): boolean => {
     if (mode !== 'treinar') return false;
-    if (currentStepIndex >= selectedOpening.movesSan.length) return false;
+    if (currentStepIndex >= movesSan.length) return false;
 
-    const expectedSan = selectedOpening.movesSan[currentStepIndex];
+    const expectedSan = movesSan[currentStepIndex];
     const testChess = new Chess(chess.fen());
 
     try {
@@ -95,7 +112,7 @@ export const OpeningsView: React.FC = () => {
         setChess(testChess);
 
         // Check if finished
-        if (nextIndex >= selectedOpening.movesSan.length) {
+        if (nextIndex >= movesSan.length) {
           sounds.playVictory();
           setTrainingFeedback({
             status: 'completed',
@@ -111,8 +128,8 @@ export const OpeningsView: React.FC = () => {
         });
 
         setTimeout(() => {
-          if (nextIndex < selectedOpening.movesSan.length) {
-            const blackMoveSan = selectedOpening.movesSan[nextIndex];
+          if (nextIndex < movesSan.length) {
+            const blackMoveSan = movesSan[nextIndex];
             const autoChess = new Chess(testChess.fen());
             const autoRes = autoChess.move(blackMoveSan);
             if (autoRes) {
@@ -121,7 +138,7 @@ export const OpeningsView: React.FC = () => {
               setChess(autoChess);
               setCurrentStepIndex(nextIndex + 1);
 
-              if (nextIndex + 1 >= selectedOpening.movesSan.length) {
+              if (nextIndex + 1 >= movesSan.length) {
                 sounds.playVictory();
                 setTrainingFeedback({
                   status: 'completed',
@@ -168,7 +185,7 @@ export const OpeningsView: React.FC = () => {
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              {selectedOpening.category} • Dificuldade: {selectedOpening.difficulty}
+              Código ECO
             </p>
           </div>
         </div>
@@ -230,11 +247,11 @@ export const OpeningsView: React.FC = () => {
                   ← Anterior
                 </button>
                 <span className="text-xs font-mono text-slate-500 px-2">
-                  {currentStepIndex} / {selectedOpening.movesSan.length}
+                  {currentStepIndex} / {movesSan.length}
                 </span>
                 <button
                   onClick={handleStepForward}
-                  disabled={currentStepIndex >= selectedOpening.movesSan.length}
+                  disabled={currentStepIndex >= movesSan.length}
                   className="px-4 py-2 bg-[#8AA7E1] hover:bg-[#7292D6] disabled:opacity-40 text-white font-bold text-xs rounded-xl transition-all shadow-xs"
                 >
                   Próximo →
@@ -282,36 +299,16 @@ export const OpeningsView: React.FC = () => {
 
         {/* Right: Theory, Main Lines & Opening Selector */}
         <div className="lg:col-span-6 space-y-4">
-          {/* Main Idea Card (Matching Brand Guide) */}
-          <div className="bg-white rounded-3xl p-5 border border-[#DDE3EA] shadow-xs">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-              Ideia Principal
-            </h3>
-            <p className="text-sm text-slate-700 leading-relaxed font-medium mb-4">
-              {selectedOpening.mainIdea}
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-slate-100 text-xs">
-              <div className="bg-[#F7F9FC] p-3 rounded-2xl border border-slate-100">
-                <span className="font-bold text-slate-800 block mb-1">♔ Plano das Brancas</span>
-                <p className="text-slate-600 leading-relaxed">{selectedOpening.whitePlan}</p>
-              </div>
-              <div className="bg-[#F7F9FC] p-3 rounded-2xl border border-slate-100">
-                <span className="font-bold text-slate-800 block mb-1">♚ Plano das Pretas</span>
-                <p className="text-slate-600 leading-relaxed">{selectedOpening.blackPlan}</p>
-              </div>
-            </div>
-          </div>
 
           {/* Linha Principal Moves List */}
           <div className="bg-white rounded-3xl p-5 border border-[#DDE3EA] shadow-xs">
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
-              Linha Principal
+              Linha Principal (PGN)
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {Array.from({ length: Math.ceil(selectedOpening.movesSan.length / 2) }).map((_, i) => {
-                const whiteM = selectedOpening.movesSan[i * 2];
-                const blackM = selectedOpening.movesSan[i * 2 + 1];
+              {Array.from({ length: Math.ceil(movesSan.length / 2) }).map((_, i) => {
+                const whiteM = movesSan[i * 2];
+                const blackM = movesSan[i * 2 + 1];
                 const isCurrent = currentStepIndex >= i * 2;
 
                 return (
@@ -338,23 +335,23 @@ export const OpeningsView: React.FC = () => {
               Outras Aberturas no Banco ECO
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
-              {OPENINGS_DATABASE.map((op) => (
+              {OPENINGS_DATABASE.slice(1).map((op, idx) => (
                 <button
-                  key={op.id}
+                  key={idx}
                   onClick={() => setSelectedOpening(op)}
                   className={`p-3 rounded-2xl text-left border transition-all flex items-center justify-between ${
-                    op.id === selectedOpening.id
+                    op.eco === selectedOpening.eco && op.name === selectedOpening.name
                       ? 'bg-[#8AA7E1] text-white border-[#8AA7E1] shadow-xs'
                       : 'bg-[#F7F9FC] hover:bg-[#EDE7FF] border-[#DDE3EA] text-slate-700'
                   }`}
                 >
                   <div>
                     <span className="font-bold text-xs block">{op.name}</span>
-                    <span className={`text-[10px] ${op.id === selectedOpening.id ? 'text-white/80' : 'text-slate-400'}`}>
-                      {op.eco} • {op.category}
+                    <span className={`text-[10px] ${op.eco === selectedOpening.eco && op.name === selectedOpening.name ? 'text-white/80' : 'text-slate-400'}`}>
+                      {op.eco}
                     </span>
                   </div>
-                  <ChevronRight className={`w-4 h-4 ${op.id === selectedOpening.id ? 'text-white' : 'text-slate-400'}`} />
+                  <ChevronRight className={`w-4 h-4 ${op.eco === selectedOpening.eco && op.name === selectedOpening.name ? 'text-white' : 'text-slate-400'}`} />
                 </button>
               ))}
             </div>

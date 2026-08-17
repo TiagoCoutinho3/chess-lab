@@ -13,6 +13,7 @@ interface ChessBoardProps {
   customSquareStyles?: Record<string, string>;
   interactive?: boolean;
   boardColors?: { light: string; dark: string };
+  className?: string;
 }
 
 export const ChessBoard: React.FC<ChessBoardProps> = ({
@@ -25,6 +26,7 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
   customSquareStyles = {},
   interactive = true,
   boardColors = { light: '#FFFFFF', dark: '#C2D8F7' },
+  className = '',
 }) => {
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
   const [legalMoves, setLegalMoves] = useState<string[]>([]);
@@ -183,7 +185,7 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
   };
 
   return (
-    <div className="relative w-full aspect-square max-w-[560px] mx-auto select-none rounded-2xl shadow-xl overflow-hidden border-4 border-[#8AA7E1]/30 bg-[#8AA7E1]/10">
+    <div className={`relative w-full aspect-square max-w-[560px] mx-auto select-none rounded-2xl shadow-xl overflow-hidden border-4 border-[#8AA7E1]/30 bg-[#8AA7E1]/10 ${className}`}>
       <div
         ref={boardRef}
         className="w-full h-full grid grid-cols-8 grid-rows-8"

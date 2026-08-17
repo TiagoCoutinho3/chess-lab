@@ -1,15 +1,20 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Chess, Square } from 'chess.js';
 import { Bot, PlayedGame, MoveAnalysis } from '../types';
-import { BOTS_LIST, getBotAvatarUrl, getUserAvatarUrl, getBoardColors } from '../data/botsData';
+import { BOTS_LIST, getBoardColors } from '../data/botsData';
 import { findMatchingOpening } from '../data/openingsData';
 import { findBestMove, getBotMove, analyzeMove, generateMoveExplanation } from '../engine/chessEngine';
+import { calculateBotThinkDelay } from '../engine/personalityDelay';
+import { pickTraitDialogue } from '../data/traitDialogue';
+import { pickIdentityDialogue, BIG_EVAL_SWING_CP } from '../data/botIdentityDialogue';
 import { sounds } from '../utils/audio';
 import { savePlayedGame } from '../utils/storage';
 import { ChessBoard } from '../components/ChessBoard';
 import { HintModal } from '../components/HintModal';
 import { BotSelectionModal } from '../components/BotSelectionModal';
 import { MoveEvaluationBadge } from '../components/MoveEvaluationBadge';
+import { BotSpeechBubble } from '../components/BotSpeechBubble';
+import { BotAvatar, BotAvatarMood, PlayerAvatar } from '../components/BotAvatar';
 import confetti from 'canvas-confetti';
 import {
   Lightbulb,
@@ -19,10 +24,6 @@ import {
   RefreshCw,
   Clock,
   Trophy,
-  Volume2,
-  VolumeX,
-  Sparkles,
-  ChevronRight,
   BookOpen,
 } from 'lucide-react';
 
@@ -70,6 +71,41 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
 
   // Detected opening
   const currentOpening = findMatchingOpening(gameMoves);
+  const [botSpeech, setBotSpeech] = useState<string | null>(null);
+  const [speechVisible, setSpeechVisible] = useState(false);
+  const [botMood, setBotMood] = useState<BotAvatarMood>('idle');
+  const announcedOpeningRef = useRef<string | null>(null);
+  const lastEvalSwingRef = useRef<number | null>(null);
+  const gameOverSpeechRef = useRef(false);
+  const moodTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const setTemporaryMood = useCallback((mood: BotAvatarMood, durationMs: number) => {
+    if (moodTimeoutRef.current) clearTimeout(moodTimeoutRef.current);
+    setBotMood(mood);
+    moodTimeoutRef.current = setTimeout(() => {
+      setBotMood(speechVisible ? 'speaking' : 'idle');
+      moodTimeoutRef.current = null;
+    }, durationMs);
+  }, [speechVisible]);
+
+  const showBotSpeech = useCallback((message: string | null) => {
+    if (!message) return;
+    setBotSpeech(message);
+    setSpeechVisible(true);
+    setBotMood('speaking');
+  }, []);
+
+  const hideBotSpeech = useCallback(() => {
+    setSpeechVisible(false);
+    setBotSpeech(null);
+    setBotMood((current) => (current === 'speaking' ? 'idle' : current));
+  }, []);
+
+  useEffect(() => {
+    if (speechVisible) {
+      setBotMood((current) => (current === 'idle' || current === 'speaking' ? 'speaking' : current));
+    }
+  }, [speechVisible]);
 
   // Timer interval
   useEffect(() => {
@@ -150,6 +186,12 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
     setPlayerTime(15 * 60);
     setBotTime(15 * 60);
     setIsTimerRunning(false);
+    announcedOpeningRef.current = null;
+    lastEvalSwingRef.current = null;
+    gameOverSpeechRef.current = false;
+    if (moodTimeoutRef.current) clearTimeout(moodTimeoutRef.current);
+    setBotMood('idle');
+    hideBotSpeech();
     if (botToUse) {
       setCurrentBot(botToUse);
     }
@@ -168,6 +210,14 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
     (winner: 'player' | 'bot' | 'draw', reason: string, score: '1-0' | '0-1' | '1/2-1/2') => {
       setGameOverResult({ isOver: true, winner, reason, score });
       setIsTimerRunning(false);
+
+      if (!gameOverSpeechRef.current) {
+        gameOverSpeechRef.current = true;
+        const event =
+          winner === 'player' ? 'defeat' : winner === 'bot' ? 'victory' : 'draw';
+        const line = pickIdentityDialogue(currentBot.id, event);
+        showBotSpeech(line);
+      }
 
       if (winner === 'player') {
         sounds.playVictory();
@@ -201,7 +251,7 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
       };
       savePlayedGame(playedGame);
     },
-    [currentBot, currentOpening, gameMoves, chess]
+    [currentBot, currentOpening, gameMoves, chess, showBotSpeech]
   );
 
   // Check Game State for Checkmate / Draw
@@ -229,6 +279,16 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
     [handleGameOver, playerColor]
   );
 
+  // Opening speech when first detected
+  useEffect(() => {
+    if (!currentOpening || announcedOpeningRef.current === currentOpening.eco) return;
+    if (gameMoves.length < 2) return;
+
+    announcedOpeningRef.current = currentOpening.eco;
+    const line = pickTraitDialogue(currentBot.traits, 'opening');
+    showBotSpeech(line);
+  }, [currentOpening, currentBot.traits, gameMoves.length, showBotSpeech]);
+
   // Bot Turn Trigger
   const triggerBotMove = useCallback(
     (chessInstance: Chess) => {
@@ -237,17 +297,22 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
 
       setIsBotThinking(true);
 
-      // Simulate bot "thinking" delay based on personality & level (300ms - 900ms)
-      const thinkTime = Math.max(350, Math.min(900, 300 + currentBot.level * 30));
+      const botMoveNumber = Math.ceil((gameMoves.length + 1) / 2);
+      const botColor = playerColor === 'w' ? 'b' : 'w';
+      const isBotLosing = lastEvalSwingRef.current !== null && lastEvalSwingRef.current < -80;
+
+      const thinkTime = calculateBotThinkDelay(currentBot, chessInstance, isBotLosing);
 
       setTimeout(async () => {
         try {
-          const { move: botMove } = await getBotMove(
+          const { move: botMove, evaluationCp } = await getBotMove(
             chessInstance,
             currentBot.name,
             currentBot.level,
             currentBot.blunderRate,
-            currentBot.searchDepth
+            currentBot.searchDepth,
+            currentBot.traits,
+            botMoveNumber
           );
 
           const result = chessInstance.move({
@@ -262,11 +327,32 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
 
             if (result.captured) {
               sounds.playCapture();
+              const line = pickTraitDialogue(
+                currentBot.traits,
+                'capture',
+                result.san.includes('x') && currentBot.traits.includes('artista') ? 'artista' : undefined
+              );
+              showBotSpeech(line);
             } else if (chessInstance.inCheck()) {
               sounds.playCheck();
+              const line = pickTraitDialogue(currentBot.traits, 'check');
+              showBotSpeech(line);
             } else {
               sounds.playMove();
             }
+
+            const botEvalCp = botColor === 'w' ? evaluationCp : -evaluationCp;
+            const prevSwing = lastEvalSwingRef.current;
+            if (prevSwing !== null) {
+              if (botEvalCp >= BIG_EVAL_SWING_CP && prevSwing < BIG_EVAL_SWING_CP) {
+              showBotSpeech(pickIdentityDialogue(currentBot.id, 'bigAdvantage'));
+              setTemporaryMood('happy', 3500);
+            } else if (botEvalCp <= -BIG_EVAL_SWING_CP && prevSwing > -BIG_EVAL_SWING_CP) {
+              showBotSpeech(pickIdentityDialogue(currentBot.id, 'bigDisadvantage'));
+              setTemporaryMood('angry', 3500);
+            }
+            }
+            lastEvalSwingRef.current = botEvalCp;
 
             setChess(new Chess(chessInstance.fen()));
             checkGameState(chessInstance);
@@ -278,7 +364,7 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
         }
       }, thinkTime);
     },
-    [currentBot, checkGameState, playerColor]
+    [currentBot, checkGameState, playerColor, gameMoves.length, showBotSpeech, setTemporaryMood]
   );
 
   const handlePlayerMove = async (moveData: { from: string; to: string; promotion?: string }): Promise<boolean> => {
@@ -304,6 +390,9 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
 
     if (moveResult.captured) {
       sounds.playCapture();
+      if (moveResult.color === playerColor) {
+        setTemporaryMood('angry', 3000);
+      }
     } else if (chess.inCheck()) {
       sounds.playCheck();
     } else {
@@ -320,7 +409,17 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
 
     // --- Analyze move in background (fire-and-forget, never blocks the game) ---
     analyzeMove(fenBefore, moveResult.san)
-      .then((analysis) => setMoveAnalyses((prev) => [...prev, analysis]))
+      .then((analysis) => {
+        setMoveAnalyses((prev) => [...prev, analysis]);
+
+        const isGoodMove = ['best', 'brilliant'].includes(analysis.quality);
+        const isBadMove = ['mistake', 'blunder', 'inaccuracy'].includes(analysis.quality);
+        if (isGoodMove || isBadMove) {
+          const event = isGoodMove ? 'playerGoodMove' : 'playerBadMove';
+          const line = pickTraitDialogue(currentBot.traits, event);
+          showBotSpeech(line);
+        }
+      })
       .catch(() => { /* analysis failure is non-fatal */ });
 
     return true;
@@ -377,92 +476,90 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
 
   const lastPlayerAnalysis = moveAnalyses.length > 0 ? moveAnalyses[moveAnalyses.length - 1] : null;
 
+  const botTurn = playerColor === 'w' ? 'b' : 'w';
+  const isBotTurnActive = chess.turn() === botTurn && !gameOverResult?.isOver;
+  const isPlayerTurnActive = chess.turn() === playerColor && !gameOverResult?.isOver;
+
+  const botMoodRingClass =
+    botMood === 'speaking'
+      ? 'ring-[#8B5CF6] shadow-[0_0_24px_rgba(139,92,246,0.45)] animate-pulse-subtle'
+      : botMood === 'angry'
+        ? 'ring-[#F87171] shadow-[0_0_24px_rgba(248,113,113,0.45)]'
+        : botMood === 'happy'
+          ? 'ring-[#22C55E] shadow-[0_0_24px_rgba(34,197,94,0.45)]'
+          : isBotThinking
+            ? 'ring-[#8AA7E1] shadow-[0_0_24px_rgba(138,167,225,0.45)] animate-pulse'
+            : 'ring-[#DDE3EA] shadow-lg';
+
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 animate-fadeIn">
-      {/* Top Banner: Opening Detected & Bot Switcher */}
-      <div className="bg-white rounded-2xl p-4 border border-[#DDE3EA] mb-6 flex flex-wrap items-center justify-between gap-3 shadow-xs">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#EDE7FF] border border-[#CDB4DB] flex items-center justify-center text-[#5B21B6]">
-            <BookOpen className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-[10px] uppercase font-bold text-slate-400">Abertura em Jogo</span>
-            <h3 className="font-bold text-slate-800 text-sm">
-              {currentOpening ? `${currentOpening.name} (${currentOpening.eco})` : 'Abertura Customizada'}
-            </h3>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button
-            id="change-bot-btn"
-            onClick={() => setIsBotModalOpen(true)}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#F7F9FC] hover:bg-[#EDE7FF] border border-[#DDE3EA] hover:border-[#8B5CF6] text-xs font-bold text-slate-700 transition-all"
+    <div className="h-full max-w-7xl mx-auto px-3 sm:px-5 lg:px-6 py-2 sm:py-3 overflow-hidden animate-fadeIn">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4 h-full min-h-0">
+        {/* Coluna 1: Bot (topo) + Tabuleiro + Jogador (baixo) */}
+        <div className="flex flex-col min-h-0 h-full gap-2 sm:gap-3">
+          {/* Bot — topo */}
+          <div
+            className="shrink-0 rounded-2xl border border-[#DDE3EA] bg-white shadow-xs overflow-hidden"
+            style={{
+              backgroundImage: `linear-gradient(135deg, ${currentBot.personalityTagColor.bg}22 0%, white 55%)`,
+            }}
           >
-            <Users className="w-4 h-4 text-[#8AA7E1]" />
-            <span>Trocar Oponente ({currentBot.name})</span>
-          </button>
-          
-          <button
-            id="change-color-btn"
-            onClick={() => resetGame(currentBot, playerColor === 'w' ? 'b' : 'w')}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#F7F9FC] hover:bg-[#EDE7FF] border border-[#DDE3EA] hover:border-[#8B5CF6] text-xs font-bold text-slate-700 transition-all"
-          >
-            <span>Jogar com {playerColor === 'w' ? 'Pretas' : 'Brancas'}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Main Game Arena (Board + Sidebar) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left / Center: Board & Player Headers (8 Cols on LG) */}
-        <div className="lg:col-span-8 flex flex-col items-center">
-          {/* BOT INFO BAR (TOP) */}
-          <div className="w-full max-w-[560px] bg-white rounded-2xl p-3.5 border border-[#DDE3EA] mb-3 flex items-center justify-between shadow-xs">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <img
-                  src={getBotAvatarUrl(currentBot.avatarSeed)}
-                  alt={currentBot.name}
-                  className="w-11 h-11 rounded-xl bg-slate-100 p-0.5 border border-[#DDE3EA]"
-                />
+            <div className="p-3 sm:p-4 flex gap-3 sm:gap-4 items-start">
+              <div className="relative shrink-0">
+                <div
+                  className={`w-20 h-20 sm:w-24 sm:h-24 rounded-2xl ring-4 ring-offset-2 ring-offset-white bg-[#F7F9FC] p-1.5 transition-all duration-300 ${botMoodRingClass}`}
+                >
+                  <BotAvatar
+                    seed={currentBot.avatarSeed}
+                    botId={currentBot.id}
+                    style={currentBot.avatarStyle ?? 'voxel-art'}
+                    mood={botMood}
+                    alt={currentBot.name}
+                    className="w-full h-full rounded-xl object-cover"
+                  />
+                </div>
                 {isBotThinking && (
-                  <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                  <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#8AA7E1] opacity-75" />
+                    <span className="relative inline-flex rounded-full h-4 w-4 bg-[#8AA7E1] border-2 border-white" />
                   </span>
                 )}
               </div>
 
-              <div>
-                <div className="flex items-center gap-2">
-                  <h4 className="font-bold text-sm text-slate-800">{currentBot.name}</h4>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className="font-black text-base sm:text-lg text-slate-800">{currentBot.name}</h4>
                   <span
                     style={{
                       backgroundColor: currentBot.personalityTagColor.bg,
                       color: currentBot.personalityTagColor.text,
                     }}
-                    className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                    className="text-[10px] font-bold px-2.5 py-0.5 rounded-full"
                   >
                     {currentBot.personality}
                   </span>
                 </div>
-                <span className="text-xs text-slate-500 font-medium">Nível {currentBot.level}</span>
+                <p className="text-xs text-slate-500 font-semibold mt-0.5">Nível {currentBot.level}</p>
+                <p className="text-[11px] sm:text-xs italic text-slate-500 leading-snug mt-1.5 line-clamp-2">
+                  &ldquo;{currentBot.quote}&rdquo;
+                </p>
+                <BotSpeechBubble
+                  message={botSpeech}
+                  visible={speechVisible}
+                  onHide={hideBotSpeech}
+                  variant="inline"
+                />
+                {isBotThinking && !speechVisible && (
+                  <p className="text-xs font-semibold text-[#8AA7E1] animate-pulse mt-2">
+                    Calculando o próximo lance...
+                  </p>
+                )}
               </div>
-            </div>
 
-            {/* Timer & Thinking indicator */}
-            <div className="flex items-center gap-3">
-              {isBotThinking && (
-                <span className="text-xs font-semibold text-[#8AA7E1] animate-pulse hidden sm:inline">
-                  Calculando...
-                </span>
-              )}
               <div
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-sm font-bold ${
-                  chess.turn() === 'b' && !gameOverResult?.isOver
+                className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl font-mono text-sm font-black self-start ${
+                  isBotTurnActive
                     ? 'bg-[#EDE7FF] text-[#5B21B6] border border-[#8B5CF6]/30 animate-pulse'
-                    : 'bg-slate-100 text-slate-600'
+                    : 'bg-slate-100 text-slate-600 border border-[#DDE3EA]'
                 }`}
               >
                 <Clock className="w-3.5 h-3.5" />
@@ -471,108 +568,107 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
             </div>
           </div>
 
-          {/* THE CHESS BOARD */}
-          <ChessBoard
-            chess={chess}
-            onMove={handlePlayerMove}
-            disabled={isBotThinking || gameOverResult?.isOver}
-            hintMove={hintMove}
-            lastMove={lastMove}
-            orientation={playerColor === 'w' ? 'white' : 'black'}
-            boardColors={getBoardColors(currentBot)}
-          />
-
-          {/* USER INFO BAR (BOTTOM) */}
-          <div className="w-full max-w-[560px] bg-white rounded-2xl p-3.5 border border-[#DDE3EA] mt-3 flex items-center justify-between shadow-xs">
-            <div className="flex items-center gap-3">
-              <img
-                src={getUserAvatarUrl()}
-                alt="Você"
-                className="w-11 h-11 rounded-xl bg-[#8AA7E1]/20 p-0.5 border border-[#8AA7E1]/40"
+          {/* Tabuleiro */}
+          <div className="flex-1 min-h-0 flex items-center justify-center w-full">
+            <div className="h-full max-w-full aspect-square">
+              <ChessBoard
+                chess={chess}
+                onMove={handlePlayerMove}
+                disabled={isBotThinking || gameOverResult?.isOver}
+                hintMove={hintMove}
+                lastMove={lastMove}
+                orientation={playerColor === 'w' ? 'white' : 'black'}
+                boardColors={getBoardColors(currentBot)}
+                className="h-full w-full max-w-none mx-0"
               />
-              <div>
-                <div className="flex items-center gap-2">
-                  <h4 className="font-bold text-sm text-slate-800">Você (Brancas)</h4>
-                </div>
-                {lastPlayerAnalysis && (
-                  <div className="mt-0.5">
-                    <MoveEvaluationBadge quality={lastPlayerAnalysis.quality} showLabel={false} />
-                  </div>
-                )}
-              </div>
             </div>
+          </div>
 
-            {/* User Timer */}
+          {/* Jogador — baixo */}
+          <div
+            className={`shrink-0 rounded-2xl border p-3 sm:p-4 flex items-center gap-3 sm:gap-4 shadow-xs ${
+              isPlayerTurnActive
+                ? 'bg-[#BDE7C9]/30 border-[#22C55E]/40'
+                : 'bg-white border-[#DDE3EA]'
+            }`}
+          >
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl ring-4 ring-[#8AA7E1]/40 ring-offset-2 ring-offset-white bg-[#8AA7E1]/10 p-1.5 shrink-0">
+              <PlayerAvatar
+                alt="Você"
+                className="w-full h-full rounded-xl object-cover"
+              />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="font-black text-base sm:text-lg text-slate-800">
+                Você ({playerColor === 'w' ? 'Brancas' : 'Pretas'})
+              </h4>
+              {lastPlayerAnalysis && (
+                <div className="mt-1">
+                  <MoveEvaluationBadge quality={lastPlayerAnalysis.quality} showLabel={false} />
+                </div>
+              )}
+            </div>
             <div
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-sm font-bold ${
-                chess.turn() === 'w' && !gameOverResult?.isOver
+              className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl font-mono text-sm font-black ${
+                isPlayerTurnActive
                   ? 'bg-[#BDE7C9] text-[#166534] border border-[#22C55E]/30 animate-pulse'
-                  : 'bg-slate-100 text-slate-600'
+                  : 'bg-slate-100 text-slate-600 border border-[#DDE3EA]'
               }`}
             >
               <Clock className="w-3.5 h-3.5" />
               <span>{formatTime(playerTime)}</span>
             </div>
           </div>
-
-          {/* IN-GAME CONTROLS (Matching Brand Guide: DESISTIR | DICA | DESFAZER) */}
-          <div className="w-full max-w-[560px] grid grid-cols-3 gap-2 sm:gap-3 mt-4">
-            {/* DESISTIR */}
-            <button
-              id="game-resign-btn"
-              onClick={handleResign}
-              disabled={gameOverResult?.isOver}
-              className="py-3 px-3 rounded-2xl border border-[#FFD6E0] bg-white hover:bg-[#FFD6E0]/40 active:scale-95 text-[#9F1239] text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs disabled:opacity-50"
-            >
-              <Flag className="w-4 h-4" />
-              <span>DESISTIR</span>
-            </button>
-
-            {/* DICA (Primary Feature) */}
-            <button
-              id="game-hint-btn"
-              onClick={handleRequestHint}
-              disabled={gameOverResult?.isOver || isBotThinking}
-              className="py-3 px-3 rounded-2xl bg-[#BDE7C9] hover:bg-[#A6DEB4] active:scale-95 text-[#166534] text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm border border-[#22C55E]/30 disabled:opacity-50"
-            >
-              <Lightbulb className="w-4 h-4 text-[#166534]" />
-              <span>★ DICA</span>
-            </button>
-
-            {/* DESFAZER */}
-            <button
-              id="game-undo-btn"
-              onClick={handleUndo}
-              disabled={gameOverResult?.isOver || isBotThinking || gameMoves.length === 0}
-              className="py-3 px-3 rounded-2xl border border-[#DDE3EA] bg-white hover:bg-slate-50 active:scale-95 text-slate-700 text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs disabled:opacity-50"
-            >
-              <RotateCcw className="w-4 h-4 text-slate-500" />
-              <span>DESFAZER</span>
-            </button>
-          </div>
         </div>
 
-        {/* Right Sidebar: Move Notation & Analysis (4 Cols on LG) */}
-        <div className="lg:col-span-4 space-y-4">
-          {/* Move History Log Card */}
-          <div className="bg-white rounded-3xl p-5 border border-[#DDE3EA] shadow-xs flex flex-col h-[420px]">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="font-bold text-sm text-slate-800 flex items-center gap-2">
-                <span>Notação da Partida</span>
-              </h3>
+        {/* Coluna 2: Notação, abertura, tempo e controles */}
+        <div className="flex flex-col min-h-0 h-full gap-2 sm:gap-3">
+          <div className="shrink-0 bg-white rounded-2xl p-3 border border-[#DDE3EA] shadow-xs">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-xl bg-[#EDE7FF] border border-[#CDB4DB] flex items-center justify-center text-[#5B21B6] shrink-0">
+                <BookOpen className="w-4 h-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="text-[10px] uppercase font-bold text-slate-400">Abertura detectada</span>
+                <h3 className="font-bold text-slate-800 text-sm leading-tight truncate">
+                  {currentOpening ? `${currentOpening.name} (${currentOpening.eco})` : 'Abertura customizada'}
+                </h3>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 mt-3">
+              <button
+                id="change-bot-btn"
+                onClick={() => setIsBotModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F7F9FC] hover:bg-[#EDE7FF] border border-[#DDE3EA] hover:border-[#8B5CF6] text-[11px] font-bold text-slate-700 transition-all"
+              >
+                <Users className="w-3.5 h-3.5 text-[#8AA7E1]" />
+                <span>Trocar ({currentBot.name})</span>
+              </button>
+              <button
+                id="change-color-btn"
+                onClick={() => resetGame(currentBot, playerColor === 'w' ? 'b' : 'w')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F7F9FC] hover:bg-[#EDE7FF] border border-[#DDE3EA] hover:border-[#8B5CF6] text-[11px] font-bold text-slate-700 transition-all"
+              >
+                <span>Jogar {playerColor === 'w' ? 'Pretas' : 'Brancas'}</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="flex-1 min-h-0 bg-white rounded-2xl p-3 sm:p-4 border border-[#DDE3EA] shadow-xs flex flex-col">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 shrink-0">
+              <h3 className="font-bold text-sm text-slate-800">Notação da partida</h3>
               <span className="text-xs font-mono text-slate-500">
                 {Math.ceil(gameMoves.length / 2)} lances
               </span>
             </div>
 
-            {/* Move List */}
-            <div className="flex-1 overflow-y-auto py-3 space-y-1 text-xs">
+            <div className="flex-1 min-h-0 overflow-y-auto py-2 space-y-0.5 text-xs">
               {gameMoves.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-slate-400 text-center px-4">
-                  <p>Faça seu primeiro lance para começar a partida!</p>
+                  <p>Faça seu primeiro lance para começar!</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 gap-1">
+                <div className="grid grid-cols-1 gap-0.5">
                   {Array.from({ length: Math.ceil(gameMoves.length / 2) }).map((_, idx) => {
                     const whiteMove = gameMoves[idx * 2];
                     const blackMove = gameMoves[idx * 2 + 1];
@@ -581,58 +677,61 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
                     return (
                       <div
                         key={idx}
-                        className="flex items-center justify-between px-3 py-1.5 rounded-xl hover:bg-slate-50 font-mono"
+                        className="flex items-center justify-between px-2.5 py-1 rounded-lg hover:bg-slate-50 font-mono"
                       >
-                        <span className="text-slate-400 w-8 font-semibold">{idx + 1}.</span>
-
-                        {/* White move */}
+                        <span className="text-slate-400 w-7 font-semibold">{idx + 1}.</span>
                         <div className="flex-1 flex items-center gap-1.5 font-bold text-slate-800">
                           <span>{whiteMove}</span>
                           {whiteAnalysis && (
                             <MoveEvaluationBadge quality={whiteAnalysis.quality} showLabel={false} />
                           )}
                         </div>
-
-                        {/* Black move */}
-                        <div className="flex-1 font-medium text-slate-600">
-                          {blackMove || ''}
-                        </div>
+                        <div className="flex-1 font-medium text-slate-600">{blackMove || ''}</div>
                       </div>
                     );
                   })}
                 </div>
               )}
             </div>
-
-            {/* Quick Actions in Sidebar */}
-            <div className="pt-3 border-t border-slate-100 flex gap-2">
-              <button
-                onClick={() => resetGame()}
-                className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                <span>Reiniciar Jogo</span>
-              </button>
-            </div>
           </div>
 
-          {/* Bot Quote Card */}
-          <div className="bg-[#F7F9FC] rounded-3xl p-5 border border-[#DDE3EA]">
-            <div className="flex items-center gap-3 mb-2">
-              <img
-                src={getBotAvatarUrl(currentBot.avatarSeed)}
-                alt={currentBot.name}
-                className="w-8 h-8 rounded-lg bg-white p-0.5 border border-[#DDE3EA]"
-              />
-              <div>
-                <h4 className="font-bold text-xs text-slate-800">{currentBot.name}</h4>
-                <p className="text-[10px] text-slate-500">Estilo: {currentBot.personality}</p>
-              </div>
-            </div>
-            <p className="text-xs italic text-slate-600 leading-relaxed bg-white p-3 rounded-xl border border-slate-200/60">
-              "{currentBot.quote}"
-            </p>
+          <div className="shrink-0 grid grid-cols-3 gap-2">
+            <button
+              id="game-resign-btn"
+              onClick={handleResign}
+              disabled={gameOverResult?.isOver}
+              className="py-2.5 sm:py-3 px-2 rounded-2xl border border-[#FFD6E0] bg-white hover:bg-[#FFD6E0]/40 active:scale-95 text-[#9F1239] text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-xs disabled:opacity-50"
+            >
+              <Flag className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span>DESISTIR</span>
+            </button>
+            <button
+              id="game-hint-btn"
+              onClick={handleRequestHint}
+              disabled={gameOverResult?.isOver || isBotThinking}
+              className="py-2.5 sm:py-3 px-2 rounded-2xl bg-[#BDE7C9] hover:bg-[#A6DEB4] active:scale-95 text-[#166534] text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-sm border border-[#22C55E]/30 disabled:opacity-50"
+            >
+              <Lightbulb className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span>★ DICA</span>
+            </button>
+            <button
+              id="game-undo-btn"
+              onClick={handleUndo}
+              disabled={gameOverResult?.isOver || isBotThinking || gameMoves.length === 0}
+              className="py-2.5 sm:py-3 px-2 rounded-2xl border border-[#DDE3EA] bg-white hover:bg-slate-50 active:scale-95 text-slate-700 text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-xs disabled:opacity-50"
+            >
+              <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span>DESFAZER</span>
+            </button>
           </div>
+
+          <button
+            onClick={() => resetGame()}
+            className="shrink-0 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Reiniciar jogo</span>
+          </button>
         </div>
       </div>
 

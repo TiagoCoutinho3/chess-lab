@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Puzzle } from '../types';
 import { PUZZLES_LIST, getDailyPuzzle, getFormattedTodayDate } from '../data/puzzlesData';
 import { Chess, Square } from 'chess.js';
@@ -21,8 +21,8 @@ import {
 
 export const PuzzlesView: React.FC = () => {
   const [currentPuzzle, setCurrentPuzzle] = useState<Puzzle>(getDailyPuzzle());
-  const [chess, setChess] = useState<Chess>(new Chess(currentPuzzle.initialFen));
-  const [solutionStepIndex, setSolutionStepIndex] = useState<number>(0);
+  const [chess, setChess] = useState<Chess>(new Chess());
+  const [solutionStepIndex, setSolutionStepIndex] = useState<number>(1); // Start at 1 since moves[0] is auto-applied
   const [showSolution, setShowSolution] = useState<boolean>(false);
   const [showHint, setShowHint] = useState<boolean>(false);
   const [puzzleState, setPuzzleState] = useState<'solving' | 'correct' | 'failed'>('solving');
@@ -30,26 +30,47 @@ export const PuzzlesView: React.FC = () => {
   const [selectedTheme, setSelectedTheme] = useState<string>('Todos');
   const [stats, setStats] = useState(getUserStats());
 
+  // Determine turn from current chess position (after moves[0] is applied)
+  const turn = useMemo(() => {
+    return chess.turn();
+  }, [chess]);
+
+  // Get primary theme
+  const primaryTheme = useMemo(() => {
+    return currentPuzzle.themes[0] || 'Tático';
+  }, [currentPuzzle.themes]);
+
   useEffect(() => {
     loadPuzzle(currentPuzzle);
   }, [currentPuzzle]);
 
   const loadPuzzle = (puz: Puzzle) => {
-    const newChess = new Chess(puz.initialFen);
+    const newChess = new Chess(puz.fen);
+    
+    // Apply moves[0] automatically (this is the setup move before the puzzle starts)
+    if (puz.moves.length > 0) {
+      const firstMoveUci = puz.moves[0];
+      const from = firstMoveUci.substring(0, 2);
+      const to = firstMoveUci.substring(2, 4);
+      const promotion = firstMoveUci.length > 4 ? firstMoveUci[4] : undefined;
+      newChess.move({ from: from as Square, to: to as Square, promotion });
+    }
+    
     setChess(newChess);
-    setSolutionStepIndex(0);
+    setSolutionStepIndex(1); // Start at 1 since moves[0] is already applied
     setShowSolution(false);
     setShowHint(false);
     setPuzzleState('solving');
+    const puzzleTurn = newChess.turn();
     setFeedbackMessage(
-      `Vez das ${puz.turn === 'w' ? 'brancas' : 'pretas'}. Encontre o melhor lance!`
+      `Vez das ${puzzleTurn === 'w' ? 'brancas' : 'pretas'}. Encontre o melhor lance!`
     );
   };
 
   const handlePuzzleMove = (moveData: { from: string; to: string; promotion?: string }): boolean => {
     if (puzzleState === 'correct') return false;
 
-    const expectedSan = currentPuzzle.movesSan[solutionStepIndex];
+    const expectedMove = currentPuzzle.moves[solutionStepIndex];
     const testChess = new Chess(chess.fen());
 
     try {
@@ -61,15 +82,16 @@ export const PuzzlesView: React.FC = () => {
 
       if (!moveResult) return false;
 
-      // Check if move matches expected solution
-      if (moveResult.san === expectedSan) {
+      // Check if move matches expected solution (compare UCI format)
+      const uciMove = `${moveData.from}${moveData.to}${moveData.promotion || ''}`;
+      if (uciMove === expectedMove) {
         sounds.playMove();
         const nextStep = solutionStepIndex + 1;
         setSolutionStepIndex(nextStep);
         setChess(testChess);
 
         // If puzzle is finished
-        if (nextStep >= currentPuzzle.movesSan.length) {
+        if (nextStep >= currentPuzzle.moves.length) {
           sounds.playVictory();
           setPuzzleState('correct');
           setFeedbackMessage('🎉 Excelente! Você encontrou a solução perfeita!');
@@ -85,19 +107,38 @@ export const PuzzlesView: React.FC = () => {
           return true;
         }
 
-        // Opponent auto-reply
+        // Opponent auto-reply (alternating: player move at odd indices, opponent at even indices)
         setFeedbackMessage('Boa jogada! O oponente respondeu...');
         setTimeout(() => {
-          if (nextStep < currentPuzzle.movesSan.length) {
-            const oppMoveSan = currentPuzzle.movesSan[nextStep];
+          if (nextStep < currentPuzzle.moves.length) {
+            const oppMoveUci = currentPuzzle.moves[nextStep];
+            const from = oppMoveUci.substring(0, 2);
+            const to = oppMoveUci.substring(2, 4);
+            const promotion = oppMoveUci.length > 4 ? oppMoveUci[4] : undefined;
             const autoChess = new Chess(testChess.fen());
-            const autoRes = autoChess.move(oppMoveSan);
+            const autoRes = autoChess.move({ from: from as Square, to: to as Square, promotion });
             if (autoRes) {
               if (autoRes.captured) sounds.playCapture();
               else sounds.playMove();
               setChess(autoChess);
               setSolutionStepIndex(nextStep + 1);
-              setFeedbackMessage('Sua vez novamente. Encontre o golpe final!');
+              
+              // Check if puzzle is finished after opponent's reply
+              if (nextStep + 1 >= currentPuzzle.moves.length) {
+                sounds.playVictory();
+                setPuzzleState('correct');
+                setFeedbackMessage('🎉 Excelente! Você completou a sequência!');
+                incrementPuzzleSolved(true);
+                setStats(getUserStats());
+                confetti({
+                  particleCount: 80,
+                  spread: 60,
+                  origin: { y: 0.6 },
+                  colors: ['#8AA7E1', '#BDE7C9', '#FFD6E0'],
+                });
+              } else {
+                setFeedbackMessage('Sua vez novamente. Encontre o próximo lance!');
+              }
             }
           }
         }, 500);
@@ -123,17 +164,22 @@ export const PuzzlesView: React.FC = () => {
   };
 
   const handleNextPuzzle = () => {
-    const currentIndex = PUZZLES_LIST.findIndex((p) => p.id === currentPuzzle.id);
+    const currentIndex = PUZZLES_LIST.indexOf(currentPuzzle);
     const nextIndex = (currentIndex + 1) % PUZZLES_LIST.length;
     setCurrentPuzzle(PUZZLES_LIST[nextIndex]);
   };
 
   const filteredPuzzles = PUZZLES_LIST.filter((p) => {
     if (selectedTheme === 'Todos') return true;
-    return p.theme === selectedTheme;
+    return p.themes.includes(selectedTheme);
   });
 
-  const themes = ['Todos', 'Mate em 1', 'Mate em 2', 'Garfo', 'Cravada', 'Ataque Descoberto', 'Fim de Jogo'];
+  // Extract unique themes from puzzles
+  const themes = useMemo(() => {
+    const uniqueThemes = new Set<string>();
+    PUZZLES_LIST.forEach(p => p.themes.forEach(t => uniqueThemes.add(t)));
+    return ['Todos', ...Array.from(uniqueThemes).slice(0, 10)];
+  }, [PUZZLES_LIST]);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 animate-fadeIn">
@@ -151,7 +197,7 @@ export const PuzzlesView: React.FC = () => {
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Tema: <span className="font-bold text-slate-700">{currentPuzzle.theme}</span> • Rating: ~{currentPuzzle.rating}
+              Tema: <span className="font-bold text-slate-700">{primaryTheme}</span> • Rating: ~{currentPuzzle.rating}
             </p>
           </div>
         </div>
@@ -176,7 +222,7 @@ export const PuzzlesView: React.FC = () => {
           <ChessBoard
             chess={chess}
             onMove={handlePuzzleMove}
-            orientation={currentPuzzle.turn === 'w' ? 'white' : 'black'}
+            orientation={turn === 'w' ? 'white' : 'black'}
           />
 
           {/* Turn and Goal Banner */}
@@ -191,7 +237,7 @@ export const PuzzlesView: React.FC = () => {
               }`}
             >
               <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-                {currentPuzzle.turn === 'w' ? 'Vez das brancas' : 'Vez das pretas'}
+                {turn === 'w' ? 'Vez das brancas' : 'Vez das pretas'}
               </div>
               <div className="text-sm font-black mb-1">
                 {puzzleState === 'correct'
@@ -237,9 +283,9 @@ export const PuzzlesView: React.FC = () => {
         <div className="lg:col-span-6 space-y-4">
           {/* Puzzle Info & Hint Card */}
           <div className="bg-white rounded-3xl p-5 border border-[#DDE3EA] shadow-xs">
-            <h3 className="text-sm font-bold text-slate-800 mb-1">{currentPuzzle.title}</h3>
+            <h3 className="text-sm font-bold text-slate-800 mb-1">Puzzle Tático</h3>
             <p className="text-xs text-slate-600 leading-relaxed mb-4">
-              {currentPuzzle.description}
+              Encontre a melhor sequência de lances para resolver este desafio.
             </p>
 
             {/* Hint Box */}
@@ -249,7 +295,9 @@ export const PuzzlesView: React.FC = () => {
                   <Lightbulb className="w-4 h-4" />
                   <span>Dica Tática:</span>
                 </div>
-                <p className="text-xs text-[#854D0E] leading-relaxed">{currentPuzzle.hint}</p>
+                <p className="text-xs text-[#854D0E] leading-relaxed">
+                  Analise o tabuleiro cuidadosamente. Procure movimentos que criem ameaças múltiplas ou explorem fraquezas na posição do oponente.
+                </p>
               </div>
             )}
 
@@ -261,10 +309,10 @@ export const PuzzlesView: React.FC = () => {
                   <span>Solução Completa:</span>
                 </div>
                 <div className="flex items-center gap-2 font-mono font-bold text-sm text-[#166534] mb-2">
-                  {currentPuzzle.movesSan.join(' → ')}
+                  {currentPuzzle.moves.join(' → ')}
                 </div>
                 <p className="text-xs text-slate-700 leading-relaxed">
-                  {currentPuzzle.solutionExplanation}
+                  Esta é a sequência correta de lances para resolver o puzzle.
                 </p>
               </div>
             )}
@@ -300,30 +348,34 @@ export const PuzzlesView: React.FC = () => {
 
             {/* Puzzles List */}
             <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-              {filteredPuzzles.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => setCurrentPuzzle(p)}
-                  className={`w-full p-3 rounded-2xl text-left border transition-all flex items-center justify-between ${
-                    p.id === currentPuzzle.id
-                      ? 'bg-[#EDE7FF] border-[#8B5CF6]/40 text-slate-900 shadow-xs'
-                      : 'bg-[#F7F9FC] hover:bg-slate-100 border-[#DDE3EA] text-slate-700'
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-xs text-slate-800">{p.title}</span>
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white text-slate-600 border border-slate-200">
-                        {p.theme}
+              {filteredPuzzles.map((p, idx) => {
+                const puzzleTurn = p.fen.split(' ')[1] as 'w' | 'b';
+                const puzzleTheme = p.themes[0] || 'Tático';
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentPuzzle(p)}
+                    className={`w-full p-3 rounded-2xl text-left border transition-all flex items-center justify-between ${
+                      p === currentPuzzle
+                        ? 'bg-[#EDE7FF] border-[#8B5CF6]/40 text-slate-900 shadow-xs'
+                        : 'bg-[#F7F9FC] hover:bg-slate-100 border-[#DDE3EA] text-slate-700'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-xs text-slate-800">Puzzle #{idx + 1}</span>
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white text-slate-600 border border-slate-200">
+                          {puzzleTheme}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-slate-400">
+                        Vez das {puzzleTurn === 'w' ? 'Brancas' : 'Pretas'} • Rating ~{p.rating}
                       </span>
                     </div>
-                    <span className="text-[10px] text-slate-400">
-                      Vez das {p.turn === 'w' ? 'Brancas' : 'Pretas'} • Rating ~{p.rating}
-                    </span>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-slate-400" />
-                </button>
-              ))}
+                    <ChevronRight className="w-4 h-4 text-slate-400" />
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Bot } from '../types';
-import { getBotAvatarUrl } from '../data/botsData';
+import { BotAvatar } from './BotAvatar';
 import { Swords } from 'lucide-react';
 
 interface BotCardProps {
@@ -10,8 +10,6 @@ interface BotCardProps {
 }
 
 export const BotCard: React.FC<BotCardProps> = ({ bot, onSelect, isSelected = false }) => {
-  const avatarUrl = getBotAvatarUrl(bot.avatarSeed);
-
   return (
     <div
       id={`bot-card-${bot.id}`}
@@ -26,11 +24,13 @@ export const BotCard: React.FC<BotCardProps> = ({ bot, onSelect, isSelected = fa
         {/* Top: Avatar & Info */}
         <div className="flex items-start gap-4 mb-3.5">
           <div className="relative w-16 h-16 shrink-0 rounded-2xl overflow-hidden bg-[#F7F9FC] border border-[#DDE3EA] p-1 shadow-xs group-hover:scale-105 transition-transform">
-            <img
-              src={avatarUrl}
+            <BotAvatar
+              seed={bot.avatarSeed}
+              botId={bot.id}
+              style={bot.avatarStyle ?? 'voxel-art'}
+              mood="idle"
               alt={bot.name}
               className="w-full h-full object-contain"
-              loading="lazy"
             />
             <span className="absolute bottom-1 right-1 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full" />
           </div>

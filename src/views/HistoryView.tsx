@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { PlayedGame, UserStats } from '../types';
 import { getStoredGames, getUserStats } from '../utils/storage';
-import { getBotAvatarUrl, getUserAvatarUrl } from '../data/botsData';
+import { BotAvatar } from '../components/BotAvatar';
 import { Chess } from 'chess.js';
 import { ChessBoard } from '../components/ChessBoard';
 import {
@@ -134,8 +134,10 @@ export const HistoryView: React.FC = () => {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <img
-                      src={getBotAvatarUrl(game.botAvatarSeed)}
+                    <BotAvatar
+                      seed={game.botAvatarSeed}
+                      botId={game.botId}
+                      mood="idle"
                       alt={game.botName}
                       className="w-12 h-12 rounded-2xl bg-slate-100 p-0.5 border border-[#DDE3EA]"
                     />

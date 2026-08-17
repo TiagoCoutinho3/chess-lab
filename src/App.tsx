@@ -28,7 +28,7 @@ export default function App() {
       <Header currentTab={currentTab} onTabChange={setCurrentTab} />
 
       {/* Main Content Area */}
-      <main className="flex-1 pb-12">
+      <main className={`flex-1 min-h-0 ${currentTab === 'play' ? 'overflow-hidden pb-0' : 'pb-12'}`}>
         {currentTab === 'home' && (
           <HomeView
             onNavigate={setCurrentTab}
