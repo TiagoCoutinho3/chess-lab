@@ -280,7 +280,7 @@ export function getBotAvatarUrl(seed: string, botId?: string): string {
   const bot = botId ? BOTS_LIST.find((b) => b.id === botId) : undefined;
   const avatarStyle = bot?.avatarStyle ?? style;
   return generateAvatarDataUri(seed, avatarStyle, {
-    animationVariant: avatarStyle === 'voxel-bot' ? 'fastest' : 'none',
+    animationVariant: 'fastest',
   });
 }
 

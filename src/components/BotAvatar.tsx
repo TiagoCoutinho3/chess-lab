@@ -46,7 +46,7 @@ export const BotAvatar: React.FC<BotAvatarProps> = ({
   const src = useMemo(() => {
     if (mood === 'idle') {
       return generateAvatarDataUri(seed, resolvedStyle, {
-        animationVariant: resolvedStyle === 'voxel-bot' ? 'fastest' : 'none',
+        animationVariant: 'fastest',
         ...expressions.normal,
       });
     }

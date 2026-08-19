@@ -41,7 +41,7 @@ export function generateAvatarDataUri(
     size = 128,
     borderRadius = 16,
     backgroundColor = BACKGROUND_COLORS,
-    animationVariant = style === 'voxel-bot' ? 'fastest' : 'none',
+    animationVariant = 'fastest',
     ...componentOptions
   } = options;
 
