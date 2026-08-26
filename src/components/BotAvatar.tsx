@@ -1,9 +1,13 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { AvatarStyleName, generateAvatarDataUri, getDefaultAvatarStyle } from '../utils/avatarGenerator';
-import { getBotExpressions } from '../data/botAvatarExpressions';
-import { BOTS_LIST } from '../data/botsData';
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  AvatarStyleName,
+  generateAvatarDataUri,
+  getDefaultAvatarStyle,
+} from "../utils/avatarGenerator";
+import { getBotExpressions } from "../data/botAvatarExpressions";
+import { BOTS_LIST } from "../data/botsData";
 
-export type BotAvatarMood = 'idle' | 'speaking' | 'angry' | 'happy';
+export type BotAvatarMood = "idle" | "speaking" | "angry" | "happy";
 
 interface BotAvatarProps {
   seed: string;
@@ -17,10 +21,10 @@ interface BotAvatarProps {
 export const BotAvatar: React.FC<BotAvatarProps> = ({
   seed,
   botId,
-  style = 'voxel-art',
-  mood = 'idle',
-  className = '',
-  alt = 'Bot avatar',
+  style = "voxel-art",
+  mood = "idle",
+  className = "",
+  alt = "Bot avatar",
 }) => {
   const expressions = getBotExpressions(botId);
   const [speakingFrame, setSpeakingFrame] = useState(false);
@@ -30,7 +34,7 @@ export const BotAvatar: React.FC<BotAvatarProps> = ({
     getDefaultAvatarStyle(botId);
 
   useEffect(() => {
-    if (mood !== 'speaking') {
+    if (mood !== "speaking") {
       setSpeakingFrame(false);
       return;
     }
@@ -44,48 +48,43 @@ export const BotAvatar: React.FC<BotAvatarProps> = ({
   }, [mood]);
 
   const src = useMemo(() => {
-    if (mood === 'idle') {
+    if (mood === "idle") {
       return generateAvatarDataUri(seed, resolvedStyle, {
-        animationVariant: 'fastest',
+        animationVariant: "fastest",
         ...expressions.normal,
       });
     }
 
-    if (mood === 'speaking') {
+    if (mood === "speaking") {
       const frameOptions = speakingFrame
         ? expressions.speakingOpen
         : expressions.speakingClosed;
       return generateAvatarDataUri(seed, resolvedStyle, {
-        animationVariant: 'none',
+        animationVariant: "none",
         ...frameOptions,
       });
     }
 
-    if (mood === 'angry') {
+    if (mood === "angry") {
       return generateAvatarDataUri(seed, resolvedStyle, {
-        animationVariant: 'none',
+        animationVariant: "none",
         ...expressions.angry,
       });
     }
 
-    if (mood === 'happy') {
+    if (mood === "happy") {
       return generateAvatarDataUri(seed, resolvedStyle, {
-        animationVariant: 'none',
+        animationVariant: "none",
         ...expressions.happy,
       });
     }
 
-    return generateAvatarDataUri(seed, resolvedStyle, { animationVariant: 'none' });
+    return generateAvatarDataUri(seed, resolvedStyle, {
+      animationVariant: "none",
+    });
   }, [seed, resolvedStyle, mood, speakingFrame, expressions]);
 
-  return (
-    <img
-      src={src}
-      alt={alt}
-      className={className}
-      draggable={false}
-    />
-  );
+  return <img src={src} alt={alt} className={className} draggable={false} />;
 };
 
 interface PlayerAvatarProps {
@@ -94,16 +93,16 @@ interface PlayerAvatarProps {
 }
 
 export const PlayerAvatar: React.FC<PlayerAvatarProps> = ({
-  className = '',
-  alt = 'Você',
+  className = "",
+  alt = "Você",
 }) => {
   const src = useMemo(
     () =>
-      generateAvatarDataUri('ChessLabHero', 'voxel-art', {
-        backgroundColor: ['8aa7e1'],
-        animationVariant: 'none',
+      generateAvatarDataUri("ChessLabHero", "voxel-art", {
+        backgroundColor: ["8aa7e1"],
+        animationVariant: "none",
       }),
-    []
+    [],
   );
 
   return <img src={src} alt={alt} className={className} draggable={false} />;
