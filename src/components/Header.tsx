@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { ViewTab } from '../types';
-import { sounds } from '../utils/audio';
+import React, { useState } from "react";
+import { ViewTab } from "../types";
+import { sounds } from "../utils/audio";
+import { PieceIcon } from "./PieceIcon";
 import {
   Home,
   Swords,
@@ -13,7 +14,7 @@ import {
   X,
   Sparkles,
   Info,
-} from 'lucide-react';
+} from "lucide-react";
 
 interface HeaderProps {
   currentTab: ViewTab;
@@ -21,25 +22,27 @@ interface HeaderProps {
   onOpenBotSelector?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({
-  currentTab,
-  onTabChange,
-}) => {
+export const Header: React.FC<HeaderProps> = ({ currentTab, onTabChange }) => {
   const [soundActive, setSoundActive] = useState<boolean>(sounds.isEnabled());
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
-  const [showBrandGuideModal, setShowBrandGuideModal] = useState<boolean>(false);
+  const [showBrandGuideModal, setShowBrandGuideModal] =
+    useState<boolean>(false);
 
   const handleToggleSound = () => {
     const newState = sounds.toggleSound();
     setSoundActive(newState);
   };
 
-  const navItems: { id: ViewTab; label: string; icon: React.FC<{ className?: string }> }[] = [
-    { id: 'home', label: 'Início', icon: Home },
-    { id: 'play', label: 'Jogar vs Bot', icon: Swords },
-    { id: 'puzzles', label: 'Puzzles Diários', icon: PuzzleIcon },
-    { id: 'openings', label: 'Aberturas', icon: BookOpen },
-    { id: 'history', label: 'Histórico', icon: History },
+  const navItems: {
+    id: ViewTab;
+    label: string;
+    icon: React.FC<{ className?: string }>;
+  }[] = [
+    { id: "home", label: "Início", icon: Home },
+    { id: "play", label: "Jogar vs Bot", icon: Swords },
+    { id: "puzzles", label: "Puzzles Diários", icon: PuzzleIcon },
+    { id: "openings", label: "Aberturas", icon: BookOpen },
+    { id: "history", label: "Histórico", icon: History },
   ];
 
   return (
@@ -48,20 +51,22 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center justify-between h-18">
           {/* Brand Logo & Tagline */}
           <div
-            onClick={() => onTabChange('home')}
+            onClick={() => onTabChange("home")}
             className="flex items-center gap-3 cursor-pointer group"
           >
             {/* Knight Logo Badge */}
             <div className="w-11 h-11 rounded-2xl bg-[#8AA7E1] flex items-center justify-center shadow-md shadow-[#8AA7E1]/30 group-hover:scale-105 transition-transform">
-              <svg viewBox="0 0 24 24" className="w-6 h-6 fill-white">
-                <path d="M19 22H5v-2h14v2M19 19H5l1-5h12l1 5m-4.5-9.5c.8 0 1.5.7 1.5 1.5s-.7 1.5-1.5 1.5c-1.4 0-2-1.5-3.5-1.5s-2 1.5-3.5 1.5c-.8 0-1.5-.7-1.5-1.5s.7-1.5 1.5-1.5c1.4 0 2 1.5 3.5 1.5s2.1-1.5 3.5-1.5M16 4l2 4H6l2-4h8z" />
-              </svg>
+              <PieceIcon type="n" color="w" className="w-8 h-8" />
             </div>
 
             <div>
               <div className="flex items-center">
-                <span className="text-xl font-black text-slate-900 tracking-tight">Chess</span>
-                <span className="text-xl font-black text-[#8AA7E1] tracking-tight">Lab</span>
+                <span className="text-xl font-black text-slate-900 tracking-tight">
+                  Chess
+                </span>
+                <span className="text-xl font-black text-[#8AA7E1] tracking-tight">
+                  Lab
+                </span>
               </div>
               <span className="text-[11px] font-semibold text-slate-500 tracking-wider hidden sm:block">
                 Jogue. Aprenda. Evolua.
@@ -81,11 +86,13 @@ export const Header: React.FC<HeaderProps> = ({
                   onClick={() => onTabChange(item.id)}
                   className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
                     isActive
-                      ? 'bg-white text-[#8AA7E1] shadow-xs border border-[#8AA7E1]/20'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                      ? "bg-white text-[#8AA7E1] shadow-xs border border-[#8AA7E1]/20"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
                   }`}
                 >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-[#8AA7E1]' : 'text-slate-400'}`} />
+                  <Icon
+                    className={`w-4 h-4 ${isActive ? "text-[#8AA7E1]" : "text-slate-400"}`}
+                  />
                   <span>{item.label}</span>
                 </button>
               );
@@ -108,7 +115,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="sound-toggle-btn"
               onClick={handleToggleSound}
-              title={soundActive ? 'Desativar Sons' : 'Ativar Sons'}
+              title={soundActive ? "Desativar Sons" : "Ativar Sons"}
               className="p-2.5 rounded-xl border border-[#DDE3EA] hover:border-[#8AA7E1] text-slate-500 hover:text-[#8AA7E1] hover:bg-[#F7F9FC] transition-colors"
             >
               {soundActive ? (
@@ -123,7 +130,11 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2.5 md:hidden rounded-xl border border-[#DDE3EA] text-slate-600 hover:bg-slate-100"
             >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {mobileMenuOpen ? (
+                <X className="w-5 h-5" />
+              ) : (
+                <Menu className="w-5 h-5" />
+              )}
             </button>
           </div>
         </div>
@@ -143,8 +154,8 @@ export const Header: React.FC<HeaderProps> = ({
                   }}
                   className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold transition-all text-left ${
                     isActive
-                      ? 'bg-[#EDE7FF] text-[#5B21B6]'
-                      : 'text-slate-600 hover:bg-slate-50'
+                      ? "bg-[#EDE7FF] text-[#5B21B6]"
+                      : "text-slate-600 hover:bg-slate-50"
                   }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -166,8 +177,12 @@ export const Header: React.FC<HeaderProps> = ({
                   <Sparkles className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-800">ChessLab — Sistema de Design</h3>
-                  <p className="text-xs text-slate-500">Guia de identidade visual e especificações</p>
+                  <h3 className="font-bold text-slate-800">
+                    ChessLab — Sistema de Design
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Guia de identidade visual e especificações
+                  </p>
                 </div>
               </div>
               <button
@@ -180,30 +195,68 @@ export const Header: React.FC<HeaderProps> = ({
 
             <div className="space-y-4 text-xs text-slate-600">
               <div className="p-3 bg-[#F7F9FC] rounded-2xl border border-[#DDE3EA]">
-                <h4 className="font-bold text-slate-800 mb-2">Paleta de Cores Oficial</h4>
+                <h4 className="font-bold text-slate-800 mb-2">
+                  Paleta de Cores Oficial
+                </h4>
                 <div className="grid grid-cols-5 gap-2 text-[10px] text-center font-bold">
-                  <div className="p-2 rounded-xl bg-[#8AA7E1] text-white">#8AA7E1<br/>Azul Suave</div>
-                  <div className="p-2 rounded-xl bg-[#A6C8FF] text-slate-800">#A6C8FF<br/>Azul Claro</div>
-                  <div className="p-2 rounded-xl bg-[#CDB4DB] text-slate-800">#CDB4DB<br/>Roxo Suave</div>
-                  <div className="p-2 rounded-xl bg-[#FFD6E0] text-slate-800">#FFD6E0<br/>Rosa Suave</div>
-                  <div className="p-2 rounded-xl bg-[#BDE7C9] text-slate-800">#BDE7C9<br/>Verde Pastel</div>
+                  <div className="p-2 rounded-xl bg-[#8AA7E1] text-white">
+                    #8AA7E1
+                    <br />
+                    Azul Suave
+                  </div>
+                  <div className="p-2 rounded-xl bg-[#A6C8FF] text-slate-800">
+                    #A6C8FF
+                    <br />
+                    Azul Claro
+                  </div>
+                  <div className="p-2 rounded-xl bg-[#CDB4DB] text-slate-800">
+                    #CDB4DB
+                    <br />
+                    Roxo Suave
+                  </div>
+                  <div className="p-2 rounded-xl bg-[#FFD6E0] text-slate-800">
+                    #FFD6E0
+                    <br />
+                    Rosa Suave
+                  </div>
+                  <div className="p-2 rounded-xl bg-[#BDE7C9] text-slate-800">
+                    #BDE7C9
+                    <br />
+                    Verde Pastel
+                  </div>
                 </div>
               </div>
 
               <div className="p-3 bg-[#F7F9FC] rounded-2xl border border-[#DDE3EA]">
-                <h4 className="font-bold text-slate-800 mb-2">Personalidades dos Bots</h4>
+                <h4 className="font-bold text-slate-800 mb-2">
+                  Personalidades dos Bots
+                </h4>
                 <div className="flex flex-wrap gap-1.5">
-                  <span className="px-2.5 py-1 rounded-full bg-[#FFD6E0] text-[#9F1239] font-bold">Agressivo</span>
-                  <span className="px-2.5 py-1 rounded-full bg-[#EDE7FF] text-[#5B21B6] font-bold">Estratégico</span>
-                  <span className="px-2.5 py-1 rounded-full bg-[#BDE7C9] text-[#166534] font-bold">Calmo</span>
-                  <span className="px-2.5 py-1 rounded-full bg-[#CDB4DB] text-[#6B21A8] font-bold">Criativo</span>
-                  <span className="px-2.5 py-1 rounded-full bg-[#FFF1C7] text-[#854D0E] font-bold">Defensivo</span>
-                  <span className="px-2.5 py-1 rounded-full bg-[#A6C8FF] text-[#1E40AF] font-bold">Tático</span>
+                  <span className="px-2.5 py-1 rounded-full bg-[#FFD6E0] text-[#9F1239] font-bold">
+                    Agressivo
+                  </span>
+                  <span className="px-2.5 py-1 rounded-full bg-[#EDE7FF] text-[#5B21B6] font-bold">
+                    Estratégico
+                  </span>
+                  <span className="px-2.5 py-1 rounded-full bg-[#BDE7C9] text-[#166534] font-bold">
+                    Calmo
+                  </span>
+                  <span className="px-2.5 py-1 rounded-full bg-[#CDB4DB] text-[#6B21A8] font-bold">
+                    Criativo
+                  </span>
+                  <span className="px-2.5 py-1 rounded-full bg-[#FFF1C7] text-[#854D0E] font-bold">
+                    Defensivo
+                  </span>
+                  <span className="px-2.5 py-1 rounded-full bg-[#A6C8FF] text-[#1E40AF] font-bold">
+                    Tático
+                  </span>
                 </div>
               </div>
 
               <p className="text-slate-500 italic text-[11px] leading-relaxed">
-                Plataforma de xadrez pessoal para jogar contra bots inteligentes e evoluir com ferramentas de aprendizado integradas, 100% client-side com Stockfish/ChessEngine e banco ECO.
+                Plataforma de xadrez pessoal para jogar contra bots inteligentes
+                e evoluir com ferramentas de aprendizado integradas, 100%
+                client-side com Stockfish/ChessEngine e banco ECO.
               </p>
             </div>
           </div>

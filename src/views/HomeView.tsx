@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react';
-import { ViewTab, Bot, Puzzle } from '../types';
-import { BOTS_LIST } from '../data/botsData';
-import { BotAvatar, PlayerAvatar } from '../components/BotAvatar';
-import { getStoredGames, getUserStats } from '../utils/storage';
-import { getDailyPuzzle, getFormattedTodayDate } from '../data/puzzlesData';
+import React, { useMemo } from "react";
+import { ViewTab, Bot, Puzzle } from "../types";
+import { BOTS_LIST } from "../data/botsData";
+import { BotAvatar, PlayerAvatar } from "../components/BotAvatar";
+import { PieceIcon } from "../components/PieceIcon";
+import { getStoredGames, getUserStats } from "../utils/storage";
+import { getDailyPuzzle, getFormattedTodayDate } from "../data/puzzlesData";
 import {
   Bot as BotIcon,
   Puzzle as PuzzleIcon,
@@ -15,14 +16,17 @@ import {
   Flame,
   Award,
   Sparkles,
-} from 'lucide-react';
+} from "lucide-react";
 
 interface HomeViewProps {
   onNavigate: (tab: ViewTab) => void;
   onSelectBotToPlay: (bot: Bot) => void;
 }
 
-export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onSelectBotToPlay }) => {
+export const HomeView: React.FC<HomeViewProps> = ({
+  onNavigate,
+  onSelectBotToPlay,
+}) => {
   const stats = getUserStats();
   const games = getStoredGames();
   const lastGame = games.length > 0 ? games[0] : null;
@@ -31,31 +35,33 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onSelectBotToPla
 
   // Extract puzzle info from real data structure
   const puzzleInfo = useMemo(() => {
-    const turn = dailyPuzzle.fen.split(' ')[1] as 'w' | 'b';
-    const primaryTheme = dailyPuzzle.themes[0] || 'Tático';
+    const turn = dailyPuzzle.fen.split(" ")[1] as "w" | "b";
+    const primaryTheme = dailyPuzzle.themes[0] || "Tático";
     return {
       title: `Puzzle do Dia`,
       description: `Desafio tático com tema ${primaryTheme}`,
       rating: dailyPuzzle.rating,
       theme: primaryTheme,
-      turn: turn
+      turn: turn,
     };
   }, [dailyPuzzle]);
 
   // Featured bot is ByteMaster (or top bot)
-  const byteMaster = BOTS_LIST.find((b) => b.id === 'bytemaster') || BOTS_LIST[0];
+  const byteMaster =
+    BOTS_LIST.find((b) => b.id === "bytemaster") || BOTS_LIST[0];
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fadeIn">
       {/* Hero Welcome Section */}
       <div className="bg-gradient-to-br from-white via-[#F7F9FC] to-[#EDE7FF]/40 rounded-3xl p-6 sm:p-8 border border-[#DDE3EA] shadow-sm relative overflow-hidden">
         <div className="max-w-2xl relative z-10">
-
           <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
             Bem-vindo de volta!
           </h1>
           <p className="text-slate-600 text-sm sm:text-base mt-2 font-medium">
-            O que você quer fazer hoje? Jogue contra nossos bots com personalidades únicas, pratique aberturas ou desafie sua mente com o puzzle do dia.
+            O que você quer fazer hoje? Jogue contra nossos bots com
+            personalidades únicas, pratique aberturas ou desafie sua mente com o
+            puzzle do dia.
           </p>
 
           {/* Quick Stats Pill Bar */}
@@ -65,8 +71,12 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onSelectBotToPla
                 <Trophy className="w-4 h-4 text-[#1E40AF]" />
               </div>
               <div>
-                <span className="text-slate-400 block font-semibold text-[10px] uppercase">Partidas</span>
-                <span className="font-bold text-slate-800 text-sm">{stats.gamesPlayed} jogos ({stats.wins}V)</span>
+                <span className="text-slate-400 block font-semibold text-[10px] uppercase">
+                  Partidas
+                </span>
+                <span className="font-bold text-slate-800 text-sm">
+                  {stats.gamesPlayed} jogos ({stats.wins}V)
+                </span>
               </div>
             </div>
 
@@ -75,8 +85,12 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onSelectBotToPla
                 <Flame className="w-4 h-4 text-[#854D0E]" />
               </div>
               <div>
-                <span className="text-slate-400 block font-semibold text-[10px] uppercase">Ofensiva</span>
-                <span className="font-bold text-slate-800 text-sm">{stats.puzzleStreak} dias seguidos</span>
+                <span className="text-slate-400 block font-semibold text-[10px] uppercase">
+                  Ofensiva
+                </span>
+                <span className="font-bold text-slate-800 text-sm">
+                  {stats.puzzleStreak} dias seguidos
+                </span>
               </div>
             </div>
 
@@ -85,8 +99,12 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onSelectBotToPla
                 <Award className="w-4 h-4 text-[#166534]" />
               </div>
               <div>
-                <span className="text-slate-400 block font-semibold text-[10px] uppercase">Rating Estimado</span>
-                <span className="font-bold text-slate-800 text-sm font-mono">{stats.ratingEstimate}</span>
+                <span className="text-slate-400 block font-semibold text-[10px] uppercase">
+                  Rating Estimado
+                </span>
+                <span className="font-bold text-slate-800 text-sm font-mono">
+                  {stats.ratingEstimate}
+                </span>
               </div>
             </div>
           </div>
@@ -94,20 +112,17 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onSelectBotToPla
 
         {/* Decorative Floating Chess Icon Shape */}
         <div className="absolute right-4 -bottom-6 w-48 h-48 opacity-10 sm:opacity-20 pointer-events-none text-[#8AA7E1]">
-          <svg viewBox="0 0 24 24" className="w-full h-full fill-current">
-            <path d="M19 22H5v-2h14v2M19 19H5l1-5h12l1 5m-4.5-9.5c.8 0 1.5.7 1.5 1.5s-.7 1.5-1.5 1.5c-1.4 0-2-1.5-3.5-1.5s-2 1.5-3.5 1.5c-.8 0-1.5-.7-1.5-1.5s.7-1.5 1.5-1.5c1.4 0 2 1.5 3.5 1.5s2.1-1.5 3.5-1.5M16 4l2 4H6l2-4h8z" />
-          </svg>
+          <PieceIcon type="n" color="b" className="w-full h-full" />
         </div>
       </div>
 
       {/* Main 4 Action Cards Grid (Matching the Brand Guide) */}
       <div>
-      
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* 1. JOGAR */}
           <div
             id="home-action-play"
-            onClick={() => onNavigate('play')}
+            onClick={() => onNavigate("play")}
             className="group bg-white rounded-3xl p-6 border border-[#DDE3EA] hover:border-[#8AA7E1] hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between"
           >
             <div>
@@ -118,9 +133,12 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onSelectBotToPla
                 <span>JOGAR</span>
                 <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
               </h3>
-              <p className="text-xs font-semibold text-slate-500 mt-1">Partida contra bots</p>
+              <p className="text-xs font-semibold text-slate-500 mt-1">
+                Partida contra bots
+              </p>
               <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-                12 oponentes virtuais com diferentes estilos e níveis de dificuldade.
+                12 oponentes virtuais com diferentes estilos e níveis de
+                dificuldade.
               </p>
             </div>
 
@@ -133,7 +151,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onSelectBotToPla
           {/* 2. PUZZLES */}
           <div
             id="home-action-puzzles"
-            onClick={() => onNavigate('puzzles')}
+            onClick={() => onNavigate("puzzles")}
             className="group bg-white rounded-3xl p-6 border border-[#DDE3EA] hover:border-[#FFD6E0] hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between"
           >
             <div>
@@ -144,9 +162,12 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onSelectBotToPla
                 <span>PUZZLES</span>
                 <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
               </h3>
-              <p className="text-xs font-semibold text-slate-500 mt-1">Desafio do dia</p>
+              <p className="text-xs font-semibold text-slate-500 mt-1">
+                Desafio do dia
+              </p>
               <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-                Treine sua visão tática com problemas de mates, garfos e cravadas.
+                Treine sua visão tática com problemas de mates, garfos e
+                cravadas.
               </p>
             </div>
 
@@ -159,7 +180,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onSelectBotToPla
           {/* 3. ABERTURAS */}
           <div
             id="home-action-openings"
-            onClick={() => onNavigate('openings')}
+            onClick={() => onNavigate("openings")}
             className="group bg-white rounded-3xl p-6 border border-[#DDE3EA] hover:border-[#BDE7C9] hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between"
           >
             <div>
@@ -170,9 +191,12 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onSelectBotToPla
                 <span>ABERTURAS</span>
                 <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
               </h3>
-              <p className="text-xs font-semibold text-slate-500 mt-1">Estude e treine</p>
+              <p className="text-xs font-semibold text-slate-500 mt-1">
+                Estude e treine
+              </p>
               <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-                Banco ECO com explicações estratégicas e modo interativo de treino.
+                Banco ECO com explicações estratégicas e modo interativo de
+                treino.
               </p>
             </div>
 
@@ -185,7 +209,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onSelectBotToPla
           {/* 4. HISTÓRICO */}
           <div
             id="home-action-history"
-            onClick={() => onNavigate('history')}
+            onClick={() => onNavigate("history")}
             className="group bg-white rounded-3xl p-6 border border-[#DDE3EA] hover:border-[#CDB4DB] hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between"
           >
             <div>
@@ -196,9 +220,12 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onSelectBotToPla
                 <span>HISTÓRICO</span>
                 <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
               </h3>
-              <p className="text-xs font-semibold text-slate-500 mt-1">Suas partidas</p>
+              <p className="text-xs font-semibold text-slate-500 mt-1">
+                Suas partidas
+              </p>
               <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-                Revise suas jogadas, taxa de vitórias e evolução em cada abertura.
+                Revise suas jogadas, taxa de vitórias e evolução em cada
+                abertura.
               </p>
             </div>
 
@@ -220,7 +247,9 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onSelectBotToPla
                 Última Partida
               </h3>
               {lastGame && (
-                <span className="text-xs text-slate-500 font-medium">{lastGame.date}</span>
+                <span className="text-xs text-slate-500 font-medium">
+                  {lastGame.date}
+                </span>
               )}
             </div>
 
@@ -236,7 +265,11 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onSelectBotToPla
                     <div>
                       <h4 className="font-bold text-sm text-slate-800">Você</h4>
                       <span className="text-[11px] font-semibold text-emerald-600">
-                        {lastGame.result === '1-0' ? 'Vitória' : lastGame.result === '1/2-1/2' ? 'Empate' : 'Derrota'}
+                        {lastGame.result === "1-0"
+                          ? "Vitória"
+                          : lastGame.result === "1/2-1/2"
+                            ? "Empate"
+                            : "Derrota"}
                       </span>
                     </div>
                   </div>
@@ -251,8 +284,12 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onSelectBotToPla
                   {/* Bot side */}
                   <div className="flex items-center gap-3">
                     <div className="text-right">
-                      <h4 className="font-bold text-sm text-slate-800">{lastGame.botName}</h4>
-                      <span className="text-[11px] text-slate-500">Nível {lastGame.botLevel}</span>
+                      <h4 className="font-bold text-sm text-slate-800">
+                        {lastGame.botName}
+                      </h4>
+                      <span className="text-[11px] text-slate-500">
+                        Nível {lastGame.botLevel}
+                      </span>
                     </div>
                     <BotAvatar
                       seed={lastGame.botAvatarSeed}
@@ -265,7 +302,9 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onSelectBotToPla
                 </div>
 
                 <div className="mt-3 pt-3 border-t border-slate-200/60 flex items-center justify-between text-xs text-slate-500">
-                  <span>Abertura: {lastGame.openingName || 'Partida Aberta'}</span>
+                  <span>
+                    Abertura: {lastGame.openingName || "Partida Aberta"}
+                  </span>
                   <span>{lastGame.movesCount} lances</span>
                 </div>
               </div>
@@ -278,14 +317,14 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onSelectBotToPla
 
           <div className="mt-4 flex gap-2">
             <button
-              onClick={() => onNavigate('play')}
+              onClick={() => onNavigate("play")}
               className="flex-1 py-3 px-4 bg-[#8AA7E1] hover:bg-[#7292D6] text-white text-xs font-bold rounded-2xl transition-all shadow-xs flex items-center justify-center gap-2"
             >
               <Swords className="w-4 h-4" />
               <span>Jogar Novamente</span>
             </button>
             <button
-              onClick={() => onNavigate('history')}
+              onClick={() => onNavigate("history")}
               className="py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-2xl transition-all"
             >
               Rever
@@ -308,8 +347,12 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onSelectBotToPla
             <div className="bg-[#F7F9FC] rounded-2xl p-4 border border-[#DDE3EA]">
               <div className="flex items-start justify-between">
                 <div>
-                  <h4 className="font-bold text-sm text-slate-800">{puzzleInfo.title}</h4>
-                  <p className="text-xs text-slate-500 mt-0.5">{puzzleInfo.description}</p>
+                  <h4 className="font-bold text-sm text-slate-800">
+                    {puzzleInfo.title}
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {puzzleInfo.description}
+                  </p>
                 </div>
                 <span className="text-xs font-mono font-bold px-2 py-0.5 bg-white border border-[#DDE3EA] rounded-md text-slate-700">
                   {puzzleInfo.rating} pts
@@ -318,14 +361,17 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onSelectBotToPla
 
               <div className="mt-4 flex items-center gap-2 text-xs font-bold text-[#166534] bg-[#BDE7C9]/40 p-2.5 rounded-xl">
                 <Sparkles className="w-4 h-4 text-[#166534]" />
-                <span>Tema: {puzzleInfo.theme} — Vez das {puzzleInfo.turn === 'w' ? 'Brancas' : 'Pretas'}</span>
+                <span>
+                  Tema: {puzzleInfo.theme} — Vez das{" "}
+                  {puzzleInfo.turn === "w" ? "Brancas" : "Pretas"}
+                </span>
               </div>
             </div>
           </div>
 
           <button
             id="home-solve-puzzle-btn"
-            onClick={() => onNavigate('puzzles')}
+            onClick={() => onNavigate("puzzles")}
             className="mt-4 w-full py-3 px-4 bg-[#8AA7E1] hover:bg-[#7292D6] text-white text-xs font-bold rounded-2xl transition-all shadow-xs flex items-center justify-center gap-2"
           >
             <PuzzleIcon className="w-4 h-4" />
