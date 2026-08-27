@@ -1,14 +1,12 @@
-import { Puzzle } from '../types';
+import { DailyPuzzleData, Puzzle } from '../types';
 import puzzlesJson from './puzzles.json';
+import dailyPuzzleJson from './dailyPuzzle.json';
 
 export const PUZZLES_LIST: Puzzle[] = puzzlesJson as Puzzle[];
+const dailyPuzzleData = dailyPuzzleJson as DailyPuzzleData;
 
-// Helper function to get a daily puzzle based on date
 export const getDailyPuzzle = (): Puzzle => {
-  const today = new Date();
-  const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000);
-  const index = dayOfYear % PUZZLES_LIST.length;
-  return PUZZLES_LIST[index];
+  return dailyPuzzleData.current.puzzle;
 };
 
 // Helper function to get formatted today's date

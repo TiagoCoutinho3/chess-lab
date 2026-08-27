@@ -115,10 +115,21 @@ export interface Opening {
 }
 
 export interface Puzzle {
+  id?: string;
   fen: string;
   moves: string[];
   rating: number;
   themes: string[];
+}
+
+export interface DailyPuzzleEntry {
+  date: string;
+  puzzle: Puzzle;
+}
+
+export interface DailyPuzzleData {
+  current: DailyPuzzleEntry;
+  history: DailyPuzzleEntry[];
 }
 
 export interface UserStats {
