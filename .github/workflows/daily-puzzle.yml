@@ -1,0 +1,41 @@
+name: Update daily puzzle
+
+on:
+  schedule:
+    - cron: "5 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-daily-puzzle:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Select daily puzzle
+        run: npm run data:daily-puzzle
+
+      - name: Validate application
+        run: |
+          npm run lint
+          npm run build
+
+      - name: Commit daily puzzle
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/data/dailyPuzzle.json
+          git diff --cached --quiet || git commit -m "chore: update daily puzzle"
+          git push
