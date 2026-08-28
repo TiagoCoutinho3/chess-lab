@@ -27,6 +27,7 @@ export const BotAvatar: React.FC<BotAvatarProps> = ({
   alt = "Bot avatar",
 }) => {
   const expressions = getBotExpressions(botId);
+  const bot = BOTS_LIST.find((item) => item.id === botId);
   const [speakingFrame, setSpeakingFrame] = useState(false);
   const resolvedStyle: AvatarStyleName =
     style ??
@@ -52,6 +53,7 @@ export const BotAvatar: React.FC<BotAvatarProps> = ({
       return generateAvatarDataUri(seed, resolvedStyle, {
         animationVariant: "fastest",
         ...expressions.normal,
+        mouthVariant: bot?.mouthVariant ?? "flat",
       });
     }
 

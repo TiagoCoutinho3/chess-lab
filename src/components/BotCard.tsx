@@ -23,16 +23,16 @@ export const BotCard: React.FC<BotCardProps> = ({ bot, onSelect, isSelected = fa
       <div>
         {/* Top: Avatar & Info */}
         <div className="flex items-start gap-4 mb-3.5">
-          <div className="relative w-16 h-16 shrink-0 rounded-2xl overflow-hidden bg-[#F7F9FC] border border-[#DDE3EA] p-1 shadow-xs group-hover:scale-105 transition-transform">
+          <div className="relative w-20 h-20 shrink-0 rounded-xl overflow-hidden bg-[#F7F9FC] border border-[#DDE3EA] shadow-xs group-hover:scale-105 transition-transform">
             <BotAvatar
               seed={bot.avatarSeed}
               botId={bot.id}
               style={bot.avatarStyle ?? 'voxel-art'}
               mood="idle"
               alt={bot.name}
-              className="w-full h-full object-contain"
+              className="w-full h-full object-cover"
             />
-            <span className="absolute bottom-1 right-1 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full" />
+            <span className="absolute bottom-1.5 right-1.5 w-3 h-3 bg-emerald-500 border border-white rounded-full" />
           </div>
 
           <div className="flex-1 min-w-0">

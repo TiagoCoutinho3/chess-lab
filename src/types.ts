@@ -32,6 +32,7 @@ export interface Bot {
   name: string;
   avatarSeed: string;
   avatarStyle: 'voxel-art' | 'voxel-bot';
+  mouthVariant: string;
   level: number; // 1 to 20
   rating: number;
   personality: BotPersonality;

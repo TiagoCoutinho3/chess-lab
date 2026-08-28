@@ -52,8 +52,8 @@ export function generateAvatarDataUri(
   if (cached) return cached;
 
   const {
-    size = 128,
-    borderRadius = 16,
+    size = 192,
+    borderRadius = 8,
     backgroundColor = BACKGROUND_COLORS,
     animationVariant = "fastest",
     ...componentOptions
@@ -85,6 +85,10 @@ export function getDefaultAvatarStyle(botId: string): AvatarStyleName {
     "pixel",
     "spark",
     "glitch",
+    "gambit",
+    "lumen",
+    "blitz",
+    "mirage",
     "bytemaster",
     "quantum",
   ]);

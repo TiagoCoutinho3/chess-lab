@@ -33,7 +33,7 @@ export const BOT_AVATAR_EXPRESSIONS: Record<string, BotAvatarExpressionSet> = {
   },
   pixel: {
     speakingOpen: { mouthVariant: "speaker", animationVariant: "none" },
-    speakingClosed: { mouthVariant: "smile", animationVariant: "none" },
+    speakingClosed: { mouthVariant: "line", animationVariant: "none" },
     angry: {
       eyesVariant: "square",
       mouthVariant: "zigzag",
@@ -47,7 +47,7 @@ export const BOT_AVATAR_EXPRESSIONS: Record<string, BotAvatarExpressionSet> = {
   },
   spark: {
     speakingOpen: { mouthVariant: "zigzag", animationVariant: "none" },
-    speakingClosed: { mouthVariant: "line", animationVariant: "none" },
+    speakingClosed: { mouthVariant: "grill", animationVariant: "none" },
     angry: {
       eyesVariant: "square",
       mouthVariant: "grill",
@@ -104,7 +104,7 @@ export const BOT_AVATAR_EXPRESSIONS: Record<string, BotAvatarExpressionSet> = {
   },
   voxel: {
     speakingOpen: { mouthVariant: "ooh", animationVariant: "none" },
-    speakingClosed: { mouthVariant: "smirk", animationVariant: "none" },
+    speakingClosed: { mouthVariant: "grin", animationVariant: "none" },
     angry: {
       eyebrowsVariant: "angry",
       mouthVariant: "frown",
@@ -119,7 +119,7 @@ export const BOT_AVATAR_EXPRESSIONS: Record<string, BotAvatarExpressionSet> = {
   },
   bytemaster: {
     speakingOpen: { mouthVariant: "speaker", animationVariant: "none" },
-    speakingClosed: { mouthVariant: "line", animationVariant: "none" },
+    speakingClosed: { mouthVariant: "grill", animationVariant: "none" },
     angry: {
       eyesVariant: "square",
       mouthVariant: "grill",
@@ -132,11 +132,11 @@ export const BOT_AVATAR_EXPRESSIONS: Record<string, BotAvatarExpressionSet> = {
     },
   },
   titan: {
-    speakingOpen: { mouthVariant: "wideSmile", animationVariant: "none" },
+    speakingOpen: { mouthVariant: "ooh", animationVariant: "none" },
     speakingClosed: { mouthVariant: "flat", animationVariant: "none" },
     angry: {
       eyebrowsVariant: "angry",
-      mouthVariant: "frown",
+      mouthVariant: "tongue",
       eyesVariant: "wide",
       animationVariant: "none",
     },
@@ -161,7 +161,7 @@ export const BOT_AVATAR_EXPRESSIONS: Record<string, BotAvatarExpressionSet> = {
     },
   },
   sage: {
-    speakingOpen: { mouthVariant: "smile", animationVariant: "none" },
+    speakingOpen: { mouthVariant: "laugh", animationVariant: "none" },
     speakingClosed: { mouthVariant: "flat", animationVariant: "none" },
     angry: {
       eyebrowsVariant: "raised",
@@ -176,7 +176,7 @@ export const BOT_AVATAR_EXPRESSIONS: Record<string, BotAvatarExpressionSet> = {
     },
   },
   magnusbot: {
-    speakingOpen: { mouthVariant: "smirk", animationVariant: "none" },
+    speakingOpen: { mouthVariant: "ooh", animationVariant: "none" },
     speakingClosed: { mouthVariant: "flat", animationVariant: "none" },
     angry: {
       eyebrowsVariant: "angry",
@@ -189,6 +189,74 @@ export const BOT_AVATAR_EXPRESSIONS: Record<string, BotAvatarExpressionSet> = {
       eyesVariant: "open",
       animationVariant: "none",
     },
+  },
+  mimo: {
+    speakingOpen: { mouthVariant: "ooh", animationVariant: "none" },
+    speakingClosed: { mouthVariant: "flat", animationVariant: "none" },
+    angry: {
+      eyebrowsVariant: "raised",
+      eyesVariant: "wide",
+      mouthVariant: "frown",
+      animationVariant: "none",
+    },
+    happy: { eyesVariant: "soft", mouthVariant: "smile", animationVariant: "none" },
+  },
+  gambit: {
+    speakingOpen: { mouthVariant: "speaker", animationVariant: "none" },
+    speakingClosed: { mouthVariant: "grill", animationVariant: "none" },
+    angry: { eyesVariant: "square", mouthVariant: "zigzag", animationVariant: "none" },
+    happy: { eyesVariant: "plus", mouthVariant: "smile", animationVariant: "none" },
+  },
+  sentinela: {
+    speakingOpen: { mouthVariant: "ooh", animationVariant: "none" },
+    speakingClosed: { mouthVariant: "flat", animationVariant: "none" },
+    angry: {
+      eyebrowsVariant: "angry",
+      eyesVariant: "side",
+      mouthVariant: "frown",
+      animationVariant: "none",
+    },
+    happy: { eyesVariant: "open", mouthVariant: "smile", animationVariant: "none" },
+  },
+  lumen: {
+    speakingOpen: { mouthVariant: "speaker", animationVariant: "none" },
+    speakingClosed: { mouthVariant: "line", animationVariant: "none" },
+    angry: { eyesVariant: "visor", mouthVariant: "grill", animationVariant: "none" },
+    happy: { eyesVariant: "round", mouthVariant: "smile", animationVariant: "none" },
+  },
+  blitz: {
+    speakingOpen: { mouthVariant: "zigzag", animationVariant: "none" },
+    speakingClosed: { mouthVariant: "speaker", animationVariant: "none" },
+    angry: { eyesVariant: "square", mouthVariant: "grill", animationVariant: "none" },
+    happy: { eyesVariant: "plus", mouthVariant: "line", animationVariant: "none" },
+  },
+  oraculo: {
+    speakingOpen: { mouthVariant: "wideSmile", animationVariant: "none" },
+    speakingClosed: { mouthVariant: "laugh", animationVariant: "none" },
+    angry: {
+      eyebrowsVariant: "raised",
+      eyesVariant: "closed",
+      mouthVariant: "frown",
+      animationVariant: "none",
+    },
+    happy: { eyesVariant: "sleepy", mouthVariant: "bigSmile", animationVariant: "none" },
+  },
+  mirage: {
+    speakingOpen: { mouthVariant: "speaker", animationVariant: "none" },
+    speakingClosed: { mouthVariant: "smile", animationVariant: "none" },
+    angry: { eyesVariant: "visor", mouthVariant: "zigzag", animationVariant: "none" },
+    happy: { eyesVariant: "cyclops", mouthVariant: "grill", animationVariant: "none" },
+  },
+  atlas: {
+    speakingOpen: { mouthVariant: "laugh", animationVariant: "none" },
+    speakingClosed: { mouthVariant: "flat", animationVariant: "none" },
+    angry: {
+      eyebrowsVariant: "angry",
+      eyesVariant: "closed",
+      mouthVariant: "frown",
+      animationVariant: "none",
+    },
+    happy: { eyesVariant: "side", mouthVariant: "smile", animationVariant: "none" },
   },
 };
 

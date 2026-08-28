@@ -4,6 +4,7 @@ interface BotSpeechBubbleProps {
   message: string | null;
   visible: boolean;
   onHide?: () => void;
+  onTypingComplete?: () => void;
   durationMs?: number;
   variant?: 'floating' | 'inline';
 }
@@ -12,7 +13,8 @@ export const BotSpeechBubble: React.FC<BotSpeechBubbleProps> = ({
   message,
   visible,
   onHide,
-  durationMs = 4000,
+  onTypingComplete,
+  durationMs = 7000,
   variant = 'floating',
 }) => {
   const [show, setShow] = useState(false);
@@ -26,7 +28,8 @@ export const BotSpeechBubble: React.FC<BotSpeechBubbleProps> = ({
     }
 
     const characters = Array.from(message);
-    const typingDelayMs = Math.max(25, Math.min(80, Math.floor(durationMs / characters.length)));
+    const typingDelayMs = Math.max(55, Math.min(120, Math.floor(durationMs / characters.length)));
+    const completedMessageHoldMs = 2500;
     let characterIndex = 0;
     let hideTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -39,10 +42,11 @@ export const BotSpeechBubble: React.FC<BotSpeechBubbleProps> = ({
 
       if (characterIndex >= characters.length) {
         clearInterval(typingTimer);
+        onTypingComplete?.();
         hideTimer = setTimeout(() => {
           setShow(false);
           onHide?.();
-        }, 250);
+        }, completedMessageHoldMs);
       }
     }, typingDelayMs);
 
@@ -50,7 +54,7 @@ export const BotSpeechBubble: React.FC<BotSpeechBubbleProps> = ({
       clearInterval(typingTimer);
       if (hideTimer) clearTimeout(hideTimer);
     };
-  }, [visible, message, durationMs, onHide]);
+  }, [visible, message, durationMs, onHide, onTypingComplete]);
 
   if (!show || !message) return null;
 
