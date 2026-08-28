@@ -4,7 +4,6 @@ import { Bot, PlayedGame, MoveAnalysis } from '../types';
 import { BOTS_LIST, getBoardColors } from '../data/botsData';
 import { findMatchingOpening } from '../data/openingsData';
 import { findBestMove, getBotMove, analyzeMove, generateMoveExplanation } from '../engine/chessEngine';
-import { calculateBotThinkDelay } from '../engine/personalityDelay';
 import { pickTraitDialogue } from '../data/traitDialogue';
 import { pickIdentityDialogue, BIG_EVAL_SWING_CP } from '../data/botIdentityDialogue';
 import { sounds } from '../utils/audio';
@@ -22,7 +21,6 @@ import {
   Flag,
   Users,
   RefreshCw,
-  Clock,
   Trophy,
   BookOpen,
 } from 'lucide-react';
@@ -64,11 +62,6 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
     score: '1-0' | '0-1' | '1/2-1/2';
   } | null>(null);
 
-  // Timers (in seconds, 15 minutes by default)
-  const [playerTime, setPlayerTime] = useState<number>(15 * 60);
-  const [botTime, setBotTime] = useState<number>(15 * 60);
-  const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
-
   // Detected opening
   const currentOpening = findMatchingOpening(gameMoves);
   const [botSpeech, setBotSpeech] = useState<string | null>(null);
@@ -101,44 +94,15 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
     setBotMood((current) => (current === 'speaking' ? 'idle' : current));
   }, []);
 
+  const handleSpeechTypingComplete = useCallback(() => {
+    setBotMood((current) => (current === 'speaking' ? 'idle' : current));
+  }, []);
+
   useEffect(() => {
     if (speechVisible) {
       setBotMood((current) => (current === 'idle' || current === 'speaking' ? 'speaking' : current));
     }
   }, [speechVisible]);
-
-  // Timer interval
-  useEffect(() => {
-    if (!isTimerRunning || gameOverResult?.isOver) return;
-
-    const interval = setInterval(() => {
-      if (chess.turn() === playerColor) {
-        setPlayerTime((prev) => {
-          if (prev <= 1) {
-            handleGameOver('bot', 'Tempo esgotado', playerColor === 'w' ? '0-1' : '1-0');
-            return 0;
-          }
-          return prev - 1;
-        });
-      } else {
-        setBotTime((prev) => {
-          if (prev <= 1) {
-            handleGameOver('player', 'Tempo esgotado do Bot', playerColor === 'w' ? '1-0' : '0-1');
-            return 0;
-          }
-          return prev - 1;
-        });
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [isTimerRunning, chess.turn(), gameOverResult, playerColor]);
-
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
 
   // Get captured pieces
   const getCapturedPieces = () => {
@@ -183,9 +147,6 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
     setLastMove(null);
     setGameOverResult(null);
     setIsBotThinking(false);
-    setPlayerTime(15 * 60);
-    setBotTime(15 * 60);
-    setIsTimerRunning(false);
     announcedOpeningRef.current = null;
     lastEvalSwingRef.current = null;
     gameOverSpeechRef.current = false;
@@ -201,7 +162,7 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
     
     // If player chose black, bot (white) moves first
     if (colorToUse === 'b' || (colorToUse === undefined && playerColor === 'b')) {
-      setTimeout(() => triggerBotMove(newChess), 500);
+      triggerBotMove(newChess);
     }
   };
 
@@ -209,7 +170,6 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
   const handleGameOver = useCallback(
     (winner: 'player' | 'bot' | 'draw', reason: string, score: '1-0' | '0-1' | '1/2-1/2') => {
       setGameOverResult({ isOver: true, winner, reason, score });
-      setIsTimerRunning(false);
 
       if (!gameOverSpeechRef.current) {
         gameOverSpeechRef.current = true;
@@ -291,7 +251,7 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
 
   // Bot Turn Trigger
   const triggerBotMove = useCallback(
-    (chessInstance: Chess) => {
+    async (chessInstance: Chess) => {
       const botTurn = playerColor === 'w' ? 'b' : 'w';
       if (chessInstance.isGameOver() || chessInstance.turn() !== botTurn) return;
 
@@ -299,30 +259,25 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
 
       const botMoveNumber = Math.ceil((gameMoves.length + 1) / 2);
       const botColor = playerColor === 'w' ? 'b' : 'w';
-      const isBotLosing = lastEvalSwingRef.current !== null && lastEvalSwingRef.current < -80;
+      try {
+        const { move: botMove, evaluationCp } = await getBotMove(
+          chessInstance,
+          currentBot.name,
+          currentBot.level,
+          currentBot.blunderRate,
+          currentBot.searchDepth,
+          currentBot.traits,
+          botMoveNumber
+        );
 
-      const thinkTime = calculateBotThinkDelay(currentBot, chessInstance, isBotLosing);
+        const fenBefore = chessInstance.fen();
+        const result = chessInstance.move({
+          from: botMove.from,
+          to: botMove.to,
+          promotion: botMove.promotion || 'q',
+        });
 
-      setTimeout(async () => {
-        try {
-          const { move: botMove, evaluationCp } = await getBotMove(
-            chessInstance,
-            currentBot.name,
-            currentBot.level,
-            currentBot.blunderRate,
-            currentBot.searchDepth,
-            currentBot.traits,
-            botMoveNumber
-          );
-
-          const fenBefore = chessInstance.fen();
-          const result = chessInstance.move({
-            from: botMove.from,
-            to: botMove.to,
-            promotion: botMove.promotion || 'q',
-          });
-
-          if (result) {
+        if (result) {
             setLastMove({ from: result.from, to: result.to });
             setGameMoves((prev) => [...prev, result.san]);
 
@@ -364,13 +319,12 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
                 setMoveAnalyses((prev) => [...prev, analysis]);
               })
               .catch(() => { /* analysis failure is non-fatal */ });
-          }
-        } catch (err) {
-          console.error('Bot move failed', err);
-        } finally {
-          setIsBotThinking(false);
         }
-      }, thinkTime);
+      } catch (err) {
+        console.error('Bot move failed', err);
+      } finally {
+        setIsBotThinking(false);
+      }
     },
     [currentBot, checkGameState, playerColor, gameMoves.length, showBotSpeech, setTemporaryMood]
   );
@@ -388,9 +342,6 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
     });
 
     if (!moveResult) return false;
-
-    // --- Update board state IMMEDIATELY (don't wait for Stockfish) ---
-    if (!isTimerRunning) setIsTimerRunning(true);
 
     setLastMove({ from: moveResult.from, to: moveResult.to });
     setHintMove(null);
@@ -563,16 +514,6 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
                 )}
               </div>
 
-              <div
-                className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl font-mono text-sm font-black self-start ${
-                  isBotTurnActive
-                    ? 'bg-[#EDE7FF] text-[#5B21B6] border border-[#8B5CF6]/30 animate-pulse'
-                    : 'bg-slate-100 text-slate-600 border border-[#DDE3EA]'
-                }`}
-              >
-                <Clock className="w-3.5 h-3.5" />
-                <span>{formatTime(botTime)}</span>
-              </div>
             </div>
           </div>
 
@@ -615,16 +556,6 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
                   <MoveEvaluationBadge quality={lastPlayerAnalysis.quality} showLabel={false} />
                 </div>
               )}
-            </div>
-            <div
-              className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl font-mono text-sm font-black ${
-                isPlayerTurnActive
-                  ? 'bg-[#BDE7C9] text-[#166534] border border-[#22C55E]/30 animate-pulse'
-                  : 'bg-slate-100 text-slate-600 border border-[#DDE3EA]'
-              }`}
-            >
-              <Clock className="w-3.5 h-3.5" />
-              <span>{formatTime(playerTime)}</span>
             </div>
           </div>
         </div>
