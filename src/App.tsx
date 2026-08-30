@@ -28,7 +28,7 @@ export default function App() {
       <Header currentTab={currentTab} onTabChange={setCurrentTab} />
 
       {/* Main Content Area */}
-      <main className={`flex-1 min-h-0 ${currentTab === 'play' ? 'overflow-hidden pb-0' : 'pb-12'}`}>
+      <main className={`flex-1 min-h-0 ${currentTab === 'play' ? 'overflow-y-auto pb-12' : 'pb-12'}`}>
         {currentTab === 'home' && (
           <HomeView
             onNavigate={setCurrentTab}
@@ -50,9 +50,6 @@ export default function App() {
             <span>ChessLab</span>
             <span className="text-[#8AA7E1] font-normal">• Jogue. Aprenda. Evolua.</span>
           </div>
-          <p className="text-slate-400">
-            Plataforma 100% estática client-side • Motor de IA e Análise Integrada
-          </p>
         </div>
       </footer>
     </div>

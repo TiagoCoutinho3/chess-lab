@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Puzzle } from '../types';
 import { PUZZLES_LIST, getDailyPuzzle, getFormattedTodayDate } from '../data/puzzlesData';
 import { Chess, Square } from 'chess.js';
@@ -29,6 +29,25 @@ export const PuzzlesView: React.FC = () => {
   const [feedbackMessage, setFeedbackMessage] = useState<string>('');
   const [selectedTheme, setSelectedTheme] = useState<string>('Todos');
   const [stats, setStats] = useState(getUserStats());
+  const [playerOrientation, setPlayerOrientation] = useState<'white' | 'black'>('white');
+  const [lastMove, setLastMove] = useState<{ from: string; to: string } | null>(null);
+  const leftColumnRef = useRef<HTMLDivElement>(null);
+  const [leftHeight, setLeftHeight] = useState(0);
+
+  useEffect(() => {
+    const leftColumn = leftColumnRef.current;
+    if (!leftColumn) return;
+
+    const updateHeight = () => {
+      setLeftHeight(leftColumn.getBoundingClientRect().height);
+    };
+
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(leftColumn);
+
+    return () => observer.disconnect();
+  }, []);
 
   // Determine turn from current chess position (after moves[0] is applied)
   const turn = useMemo(() => {
@@ -54,6 +73,9 @@ export const PuzzlesView: React.FC = () => {
       const to = firstMoveUci.substring(2, 4);
       const promotion = firstMoveUci.length > 4 ? firstMoveUci[4] : undefined;
       newChess.move({ from: from as Square, to: to as Square, promotion });
+      setLastMove({ from, to });
+    } else {
+      setLastMove(null);
     }
     
     setChess(newChess);
@@ -62,6 +84,7 @@ export const PuzzlesView: React.FC = () => {
     setShowHint(false);
     setPuzzleState('solving');
     const puzzleTurn = newChess.turn();
+    setPlayerOrientation(puzzleTurn === 'w' ? 'white' : 'black');
     setFeedbackMessage(
       `Vez das ${puzzleTurn === 'w' ? 'brancas' : 'pretas'}. Encontre o melhor lance!`
     );
@@ -89,6 +112,7 @@ export const PuzzlesView: React.FC = () => {
         const nextStep = solutionStepIndex + 1;
         setSolutionStepIndex(nextStep);
         setChess(testChess);
+        setLastMove({ from: moveData.from, to: moveData.to });
 
         // If puzzle is finished
         if (nextStep >= currentPuzzle.moves.length) {
@@ -121,6 +145,7 @@ export const PuzzlesView: React.FC = () => {
               if (autoRes.captured) sounds.playCapture();
               else sounds.playMove();
               setChess(autoChess);
+              setLastMove({ from, to });
               setSolutionStepIndex(nextStep + 1);
               
               // Check if puzzle is finished after opponent's reply
@@ -216,13 +241,14 @@ export const PuzzlesView: React.FC = () => {
       </div>
 
       {/* Main Grid: Board + Puzzle Details */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         {/* Left: Tactical Board (Matching Brand Guide Mockup) */}
-        <div className="lg:col-span-6 flex flex-col items-center">
+        <div ref={leftColumnRef} className="lg:col-span-6 flex flex-col items-center">
           <ChessBoard
             chess={chess}
             onMove={handlePuzzleMove}
-            orientation={turn === 'w' ? 'white' : 'black'}
+            orientation={playerOrientation}
+            lastMove={lastMove}
           />
 
           {/* Turn and Goal Banner */}
@@ -280,9 +306,12 @@ export const PuzzlesView: React.FC = () => {
         </div>
 
         {/* Right: Explanations, Hints, & Puzzle Library */}
-        <div className="lg:col-span-6 space-y-4">
+        <div
+          className="lg:col-span-6 flex flex-col gap-4 overflow-hidden min-h-0"
+          style={{ height: leftHeight ? `${leftHeight}px` : 'auto' }}
+        >
           {/* Puzzle Info & Hint Card */}
-          <div className="bg-white rounded-3xl p-5 border border-[#DDE3EA] shadow-xs">
+          <div className="bg-white rounded-3xl p-5 border border-[#DDE3EA] shadow-xs flex-shrink-0">
             <h3 className="text-sm font-bold text-slate-800 mb-1">Puzzle Tático</h3>
             <p className="text-xs text-slate-600 leading-relaxed mb-4">
               Encontre a melhor sequência de lances para resolver este desafio.
@@ -319,7 +348,7 @@ export const PuzzlesView: React.FC = () => {
           </div>
 
           {/* Banco de Puzzles Curados */}
-          <div className="bg-white rounded-3xl p-5 border border-[#DDE3EA] shadow-xs">
+          <div className="bg-white rounded-3xl p-5 border border-[#DDE3EA] shadow-xs relative flex-1 min-h-0 overflow-hidden">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                 Banco de Puzzles Táticos
@@ -347,7 +376,8 @@ export const PuzzlesView: React.FC = () => {
             </div>
 
             {/* Puzzles List */}
-            <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+            <div className="absolute inset-x-5 top-[112px] bottom-5 overflow-y-auto pr-1">
+              <div className="space-y-2">
               {filteredPuzzles.map((p, idx) => {
                 const puzzleTurn = p.fen.split(' ')[1] as 'w' | 'b';
                 const puzzleTheme = p.themes[0] || 'Tático';
@@ -376,6 +406,7 @@ export const PuzzlesView: React.FC = () => {
                   </button>
                 );
               })}
+              </div>
             </div>
           </div>
         </div>

@@ -435,26 +435,81 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
 
   const lastPlayerAnalysis = moveAnalyses.length > 0 ? moveAnalyses[moveAnalyses.length - 1] : null;
 
-  const botTurn = playerColor === 'w' ? 'b' : 'w';
-  const isBotTurnActive = chess.turn() === botTurn && !gameOverResult?.isOver;
   const isPlayerTurnActive = chess.turn() === playerColor && !gameOverResult?.isOver;
 
   const botMoodRingClass =
     botMood === 'speaking'
-      ? 'ring-[#8B5CF6] shadow-[0_0_24px_rgba(139,92,246,0.45)] animate-pulse-subtle'
+      ? 'border-[#8B5CF6] shadow-md'
       : botMood === 'angry'
-        ? 'ring-[#F87171] shadow-[0_0_24px_rgba(248,113,113,0.45)]'
+        ? 'border-[#F87171] shadow-md'
         : botMood === 'happy'
-          ? 'ring-[#22C55E] shadow-[0_0_24px_rgba(34,197,94,0.45)]'
-          : isBotThinking
-            ? 'ring-[#8AA7E1] shadow-[0_0_24px_rgba(138,167,225,0.45)] animate-pulse'
-            : 'ring-[#DDE3EA] shadow-lg';
+          ? 'border-[#22C55E] shadow-md'
+        : isBotThinking
+            ? 'border-[#8AA7E1] shadow-md'
+            : 'border-[#DDE3EA] shadow-xs';
 
   return (
-    <div className="h-full max-w-7xl mx-auto px-3 sm:px-5 lg:px-6 py-2 sm:py-3 overflow-hidden animate-fadeIn">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4 h-full min-h-0">
+    <div className="min-h-full max-w-7xl mx-auto px-3 sm:px-5 lg:px-6 py-2 sm:py-3 overflow-visible animate-fadeIn">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4 items-start">
         {/* Coluna 1: Bot (topo) + Tabuleiro + Jogador (baixo) */}
-        <div className="flex flex-col min-h-0 h-full gap-2 sm:gap-3">
+        <div className="flex flex-col gap-2 sm:gap-3">
+          {/* Tabuleiro */}
+          <div className="w-full flex items-center justify-center">
+            <div className="w-full max-w-full aspect-square">
+              <ChessBoard
+                chess={chess}
+                onMove={handlePlayerMove}
+                disabled={isBotThinking || gameOverResult?.isOver}
+                hintMove={hintMove}
+                lastMove={lastMove}
+                orientation={playerColor === 'w' ? 'white' : 'black'}
+                boardColors={getBoardColors(currentBot)}
+                className="w-full h-auto max-w-none mx-0 aspect-square"
+              />
+            </div>
+          </div>
+
+          <div className="shrink-0 grid grid-cols-3 gap-2">
+            <button
+              id="game-resign-btn"
+              onClick={handleResign}
+              disabled={gameOverResult?.isOver}
+              className="py-2.5 sm:py-3 px-2 rounded-2xl border border-[#FFD6E0] bg-white hover:bg-[#FFD6E0]/40 active:scale-95 text-[#9F1239] text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-xs disabled:opacity-50"
+            >
+              <Flag className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span>DESISTIR</span>
+            </button>
+            <button
+              id="game-hint-btn"
+              onClick={handleRequestHint}
+              disabled={gameOverResult?.isOver || isBotThinking}
+              className="py-2.5 sm:py-3 px-2 rounded-2xl bg-[#BDE7C9] hover:bg-[#A6DEB4] active:scale-95 text-[#166534] text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-sm border border-[#22C55E]/30 disabled:opacity-50"
+            >
+              <Lightbulb className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span>★ DICA</span>
+            </button>
+            <button
+              id="game-undo-btn"
+              onClick={handleUndo}
+              disabled={gameOverResult?.isOver || isBotThinking || gameMoves.length === 0}
+              className="py-2.5 sm:py-3 px-2 rounded-2xl border border-[#DDE3EA] bg-white hover:bg-slate-50 active:scale-95 text-slate-700 text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-xs disabled:opacity-50"
+            >
+              <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span>DESFAZER</span>
+            </button>
+          </div>
+
+          <button
+            onClick={() => resetGame()}
+            className="shrink-0 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Reiniciar jogo</span>
+          </button>
+        </div>
+
+        {/* Coluna 2: Notação, abertura, tempo e controles */}
+        <div className="flex flex-col gap-2 sm:gap-3">
           {/* Bot — topo */}
           <div
             className="shrink-0 rounded-2xl border border-[#DDE3EA] bg-white shadow-xs overflow-hidden"
@@ -464,29 +519,25 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
           >
             <div className="p-3 sm:p-4 flex gap-3 sm:gap-4 items-start">
               <div className="relative shrink-0">
-                <div
-                  className={`w-20 h-20 sm:w-24 sm:h-24 rounded-2xl ring-4 ring-offset-2 ring-offset-white bg-[#F7F9FC] p-1.5 transition-all duration-300 ${botMoodRingClass}`}
-                >
+                <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border bg-[#F7F9FC] transition-all duration-300 ${botMoodRingClass}`}>
                   <BotAvatar
                     seed={currentBot.avatarSeed}
                     botId={currentBot.id}
                     style={currentBot.avatarStyle ?? 'voxel-art'}
                     mood={botMood}
                     alt={currentBot.name}
-                    className="w-full h-full rounded-xl object-cover"
+                    className="w-full h-full object-cover"
                   />
                 </div>
                 {isBotThinking && (
                   <span className="absolute -top-1 -right-1 flex h-4 w-4">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#8AA7E1] opacity-75" />
                     <span className="relative inline-flex rounded-full h-4 w-4 bg-[#8AA7E1] border-2 border-white" />
                   </span>
                 )}
               </div>
-
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h4 className="font-black text-base sm:text-lg text-slate-800">{currentBot.name}</h4>
+                  <h4 className="font-black text-base text-slate-800">{currentBot.name}</h4>
                   <span
                     style={{
                       backgroundColor: currentBot.personalityTagColor.bg,
@@ -497,14 +548,12 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
                     {currentBot.personality}
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 font-semibold mt-0.5">Nível {currentBot.level}</p>
-                <p className="text-[11px] sm:text-xs italic text-slate-500 leading-snug mt-1.5 line-clamp-2">
-                  &ldquo;{currentBot.quote}&rdquo;
-                </p>
+                <div className="text-xs text-slate-500 font-semibold mt-0.5">Nível {currentBot.level}</div>
                 <BotSpeechBubble
                   message={botSpeech}
                   visible={speechVisible}
                   onHide={hideBotSpeech}
+                  onTypingComplete={handleSpeechTypingComplete}
                   variant="inline"
                 />
                 {isBotThinking && !speechVisible && (
@@ -513,68 +562,8 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
                   </p>
                 )}
               </div>
-
             </div>
-          </div>
-
-          {/* Tabuleiro */}
-          <div className="flex-1 min-h-0 flex items-center justify-center w-full">
-            <div className="h-full max-w-full aspect-square">
-              <ChessBoard
-                chess={chess}
-                onMove={handlePlayerMove}
-                disabled={isBotThinking || gameOverResult?.isOver}
-                hintMove={hintMove}
-                lastMove={lastMove}
-                orientation={playerColor === 'w' ? 'white' : 'black'}
-                boardColors={getBoardColors(currentBot)}
-                className="h-full w-full max-w-none mx-0"
-              />
-            </div>
-          </div>
-
-          {/* Jogador — baixo */}
-          <div
-            className={`shrink-0 rounded-2xl border p-3 sm:p-4 flex items-center gap-3 sm:gap-4 shadow-xs ${
-              isPlayerTurnActive
-                ? 'bg-[#BDE7C9]/30 border-[#22C55E]/40'
-                : 'bg-white border-[#DDE3EA]'
-            }`}
-          >
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl ring-4 ring-[#8AA7E1]/40 ring-offset-2 ring-offset-white bg-[#8AA7E1]/10 p-1.5 shrink-0">
-              <PlayerAvatar
-                alt="Você"
-                className="w-full h-full rounded-xl object-cover"
-              />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h4 className="font-black text-base sm:text-lg text-slate-800">
-                Você ({playerColor === 'w' ? 'Brancas' : 'Pretas'})
-              </h4>
-              {lastPlayerAnalysis && (
-                <div className="mt-1">
-                  <MoveEvaluationBadge quality={lastPlayerAnalysis.quality} showLabel={false} />
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Coluna 2: Notação, abertura, tempo e controles */}
-        <div className="flex flex-col min-h-0 h-full gap-2 sm:gap-3">
-          <div className="shrink-0 bg-white rounded-2xl p-3 border border-[#DDE3EA] shadow-xs">
-            <div className="flex items-start gap-3">
-              <div className="w-9 h-9 rounded-xl bg-[#EDE7FF] border border-[#CDB4DB] flex items-center justify-center text-[#5B21B6] shrink-0">
-                <BookOpen className="w-4 h-4" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <span className="text-[10px] uppercase font-bold text-slate-400">Abertura detectada</span>
-                <h3 className="font-bold text-slate-800 text-sm leading-tight truncate">
-                  {currentOpening ? `${currentOpening.name} (${currentOpening.eco})` : 'Abertura customizada'}
-                </h3>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2 mt-3">
+            <div className="flex flex-wrap gap-2 px-3 pb-3 sm:px-4 sm:pb-4">
               <button
                 id="change-bot-btn"
                 onClick={() => setIsBotModalOpen(true)}
@@ -593,10 +582,18 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
             </div>
           </div>
 
-          <div className="flex-1 min-h-0 bg-white rounded-2xl p-3 sm:p-4 border border-[#DDE3EA] shadow-xs flex flex-col">
+          <div className="flex-1 min-h-0 max-h-[38vh] bg-white rounded-2xl p-3 sm:p-4 border border-[#DDE3EA] shadow-xs flex flex-col">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100 shrink-0">
-              <h3 className="font-bold text-sm text-slate-800">Notação da partida</h3>
-              <span className="text-xs font-mono text-slate-500">
+              <div className="flex items-center gap-2 min-w-0">
+                <BookOpen className="w-4 h-4 text-[#8AA7E1] shrink-0" />
+                <div className="min-w-0">
+                  <h3 className="font-bold text-sm text-slate-800">Notação da partida</h3>
+                  <p className="text-[10px] text-slate-500 truncate">
+                    {currentOpening ? `${currentOpening.name} (${currentOpening.eco})` : 'Abertura customizada'}
+                  </p>
+                </div>
+              </div>
+              <span className="text-xs font-mono text-slate-500 shrink-0">
                 {Math.ceil(gameMoves.length / 2)} lances
               </span>
             </div>
@@ -640,43 +637,32 @@ export const PlayView: React.FC<PlayViewProps> = ({ initialBot }) => {
             </div>
           </div>
 
-          <div className="shrink-0 grid grid-cols-3 gap-2">
-            <button
-              id="game-resign-btn"
-              onClick={handleResign}
-              disabled={gameOverResult?.isOver}
-              className="py-2.5 sm:py-3 px-2 rounded-2xl border border-[#FFD6E0] bg-white hover:bg-[#FFD6E0]/40 active:scale-95 text-[#9F1239] text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-xs disabled:opacity-50"
-            >
-              <Flag className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span>DESISTIR</span>
-            </button>
-            <button
-              id="game-hint-btn"
-              onClick={handleRequestHint}
-              disabled={gameOverResult?.isOver || isBotThinking}
-              className="py-2.5 sm:py-3 px-2 rounded-2xl bg-[#BDE7C9] hover:bg-[#A6DEB4] active:scale-95 text-[#166534] text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-sm border border-[#22C55E]/30 disabled:opacity-50"
-            >
-              <Lightbulb className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span>★ DICA</span>
-            </button>
-            <button
-              id="game-undo-btn"
-              onClick={handleUndo}
-              disabled={gameOverResult?.isOver || isBotThinking || gameMoves.length === 0}
-              className="py-2.5 sm:py-3 px-2 rounded-2xl border border-[#DDE3EA] bg-white hover:bg-slate-50 active:scale-95 text-slate-700 text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-xs disabled:opacity-50"
-            >
-              <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span>DESFAZER</span>
-            </button>
+          {/* Jogador */}
+          <div
+            className={`shrink-0 rounded-2xl border p-3 sm:p-4 flex items-center gap-3 sm:gap-4 shadow-xs ${
+              isPlayerTurnActive
+                ? 'bg-[#BDE7C9]/30 border-[#22C55E]/40'
+                : 'bg-white border-[#DDE3EA]'
+            }`}
+          >
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border border-[#DDE3EA] bg-[#8AA7E1]/10 shrink-0">
+              <PlayerAvatar
+                alt="Você"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="font-black text-base sm:text-lg text-slate-800">
+                Você ({playerColor === 'w' ? 'Brancas' : 'Pretas'})
+              </h4>
+              {lastPlayerAnalysis && (
+                <div className="mt-1">
+                  <MoveEvaluationBadge quality={lastPlayerAnalysis.quality} showLabel={false} />
+                </div>
+              )}
+            </div>
           </div>
 
-          <button
-            onClick={() => resetGame()}
-            className="shrink-0 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>Reiniciar jogo</span>
-          </button>
         </div>
       </div>
 

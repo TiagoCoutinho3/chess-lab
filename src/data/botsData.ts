@@ -16,10 +16,10 @@ export const personalityColors: Record<
     badgeBg: "#FFF1F2",
   },
   Estratégico: {
-    bg: "#EDE7FF",
-    text: "#5B21B6",
-    border: "#8B5CF6",
-    badgeBg: "#F5F3FF",
+    bg: "#6ad4db",
+    text: "#008ba3",
+    border: "#00f7ff",
+    badgeBg: "#f9ffff",
   },
   Calmo: {
     bg: "#BDE7C9",
@@ -57,7 +57,7 @@ export const personalityBoardColors: Record<
   },
   Estratégico: {
     light: "#F5F3FF",
-    dark: "#a384ff",
+    dark: "#38c0c5",
   },
   Calmo: {
     light: "#F0FDF4",
@@ -65,7 +65,7 @@ export const personalityBoardColors: Record<
   },
   Criativo: {
     light: "#FAF5FF",
-    dark: "#c96efd",
+    dark: "#c176ec",
   },
   Defensivo: {
     light: "#FEFCE8",
@@ -456,8 +456,12 @@ export function getBotAvatarUrl(seed: string, botId?: string): string {
   const style = botId ? getDefaultAvatarStyle(botId) : "voxel-art";
   const bot = botId ? BOTS_LIST.find((b) => b.id === botId) : undefined;
   const avatarStyle = bot?.avatarStyle ?? style;
+  const personalityBgColor = bot
+    ? [personalityColors[bot.personality].bg.replace("#", "")]
+    : undefined;
   return generateAvatarDataUri(seed, avatarStyle, {
     animationVariant: "fastest",
+    backgroundColor: personalityBgColor,
     ...(bot ? { mouthVariant: bot.mouthVariant } : {}),
   });
 }

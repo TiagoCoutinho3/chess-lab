@@ -12,8 +12,6 @@ import {
   VolumeX,
   Menu,
   X,
-  Sparkles,
-  Info,
 } from "lucide-react";
 
 interface HeaderProps {
@@ -25,8 +23,6 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ currentTab, onTabChange }) => {
   const [soundActive, setSoundActive] = useState<boolean>(sounds.isEnabled());
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
-  const [showBrandGuideModal, setShowBrandGuideModal] =
-    useState<boolean>(false);
 
   const handleToggleSound = () => {
     const newState = sounds.toggleSound();
@@ -101,16 +97,6 @@ export const Header: React.FC<HeaderProps> = ({ currentTab, onTabChange }) => {
 
           {/* Right Utilities */}
           <div className="flex items-center gap-2">
-            {/* Brand Guide / Info Button */}
-            <button
-              id="brand-info-btn"
-              onClick={() => setShowBrandGuideModal(true)}
-              title="Guia de Marca ChessLab"
-              className="p-2.5 rounded-xl border border-[#DDE3EA] hover:border-[#8AA7E1] text-slate-500 hover:text-[#8AA7E1] hover:bg-[#F7F9FC] transition-colors"
-            >
-              <Info className="w-4 h-4" />
-            </button>
-
             {/* Sound Toggle */}
             <button
               id="sound-toggle-btn"
@@ -167,101 +153,6 @@ export const Header: React.FC<HeaderProps> = ({ currentTab, onTabChange }) => {
         )}
       </div>
 
-      {/* Brand Guide Modal */}
-      {showBrandGuideModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white w-full max-w-xl rounded-3xl shadow-2xl border border-[#DDE3EA] p-6 max-h-[85vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-[#8AA7E1] flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-800">
-                    ChessLab — Sistema de Design
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    Guia de identidade visual e especificações
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowBrandGuideModal(false)}
-                className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-4 text-xs text-slate-600">
-              <div className="p-3 bg-[#F7F9FC] rounded-2xl border border-[#DDE3EA]">
-                <h4 className="font-bold text-slate-800 mb-2">
-                  Paleta de Cores Oficial
-                </h4>
-                <div className="grid grid-cols-5 gap-2 text-[10px] text-center font-bold">
-                  <div className="p-2 rounded-xl bg-[#8AA7E1] text-white">
-                    #8AA7E1
-                    <br />
-                    Azul Suave
-                  </div>
-                  <div className="p-2 rounded-xl bg-[#A6C8FF] text-slate-800">
-                    #A6C8FF
-                    <br />
-                    Azul Claro
-                  </div>
-                  <div className="p-2 rounded-xl bg-[#CDB4DB] text-slate-800">
-                    #CDB4DB
-                    <br />
-                    Roxo Suave
-                  </div>
-                  <div className="p-2 rounded-xl bg-[#FFD6E0] text-slate-800">
-                    #FFD6E0
-                    <br />
-                    Rosa Suave
-                  </div>
-                  <div className="p-2 rounded-xl bg-[#BDE7C9] text-slate-800">
-                    #BDE7C9
-                    <br />
-                    Verde Pastel
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-3 bg-[#F7F9FC] rounded-2xl border border-[#DDE3EA]">
-                <h4 className="font-bold text-slate-800 mb-2">
-                  Personalidades dos Bots
-                </h4>
-                <div className="flex flex-wrap gap-1.5">
-                  <span className="px-2.5 py-1 rounded-full bg-[#FFD6E0] text-[#9F1239] font-bold">
-                    Agressivo
-                  </span>
-                  <span className="px-2.5 py-1 rounded-full bg-[#EDE7FF] text-[#5B21B6] font-bold">
-                    Estratégico
-                  </span>
-                  <span className="px-2.5 py-1 rounded-full bg-[#BDE7C9] text-[#166534] font-bold">
-                    Calmo
-                  </span>
-                  <span className="px-2.5 py-1 rounded-full bg-[#CDB4DB] text-[#6B21A8] font-bold">
-                    Criativo
-                  </span>
-                  <span className="px-2.5 py-1 rounded-full bg-[#FFF1C7] text-[#854D0E] font-bold">
-                    Defensivo
-                  </span>
-                  <span className="px-2.5 py-1 rounded-full bg-[#A6C8FF] text-[#1E40AF] font-bold">
-                    Tático
-                  </span>
-                </div>
-              </div>
-
-              <p className="text-slate-500 italic text-[11px] leading-relaxed">
-                Plataforma de xadrez pessoal para jogar contra bots inteligentes
-                e evoluir com ferramentas de aprendizado integradas, 100%
-                client-side com Stockfish/ChessEngine e banco ECO.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
     </header>
   );
 };

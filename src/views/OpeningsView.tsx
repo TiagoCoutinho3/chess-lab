@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Opening } from '../types';
 import { OPENINGS_DATABASE } from '../data/openingsData';
 import { Chess, Square } from 'chess.js';
@@ -22,10 +22,28 @@ export const OpeningsView: React.FC = () => {
   const [mode, setMode] = useState<'explorar' | 'treinar'>('explorar');
   const [chess, setChess] = useState<Chess>(new Chess());
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
+  const [lastMove, setLastMove] = useState<{ from: string; to: string } | null>(null);
+  const leftColumnRef = useRef<HTMLDivElement>(null);
+  const [leftHeight, setLeftHeight] = useState(0);
   const [trainingFeedback, setTrainingFeedback] = useState<{
     status: 'idle' | 'correct' | 'wrong' | 'completed';
     message: string;
   }>({ status: 'idle', message: '' });
+
+  useEffect(() => {
+    const leftColumn = leftColumnRef.current;
+    if (!leftColumn) return;
+
+    const updateHeight = () => {
+      setLeftHeight(leftColumn.getBoundingClientRect().height);
+    };
+
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(leftColumn);
+
+    return () => observer.disconnect();
+  }, []);
 
   // Parse PGN to get moves
   const movesSan = useMemo(() => {
@@ -53,6 +71,7 @@ export const OpeningsView: React.FC = () => {
     const newChess = new Chess();
     setChess(newChess);
     setCurrentStepIndex(0);
+    setLastMove(null);
     setTrainingFeedback({
       status: 'idle',
       message: mode === 'treinar' ? 'Faça o lance das Brancas no tabuleiro!' : '',
@@ -68,6 +87,7 @@ export const OpeningsView: React.FC = () => {
       if (res) {
         setChess(newChess);
         setCurrentStepIndex((prev) => prev + 1);
+        setLastMove({ from: res.from, to: res.to });
         if (res.captured) sounds.playCapture();
         else sounds.playMove();
       }
@@ -78,11 +98,22 @@ export const OpeningsView: React.FC = () => {
   const handleStepBackward = () => {
     if (currentStepIndex > 0) {
       const newChess = new Chess();
+      let lastMoveFrom = '';
+      let lastMoveTo = '';
       for (let i = 0; i < currentStepIndex - 1; i++) {
-        newChess.move(movesSan[i]);
+        const result = newChess.move(movesSan[i]);
+        if (result) {
+          lastMoveFrom = result.from;
+          lastMoveTo = result.to;
+        }
       }
       setChess(newChess);
       setCurrentStepIndex((prev) => prev - 1);
+      if (currentStepIndex - 1 > 0 && lastMoveFrom && lastMoveTo) {
+        setLastMove({ from: lastMoveFrom, to: lastMoveTo });
+      } else {
+        setLastMove(null);
+      }
       sounds.playMove();
     }
   };
@@ -110,6 +141,7 @@ export const OpeningsView: React.FC = () => {
         const nextIndex = currentStepIndex + 1;
         setCurrentStepIndex(nextIndex);
         setChess(testChess);
+        setLastMove({ from: moveResult.from, to: moveResult.to });
 
         // Check if finished
         if (nextIndex >= movesSan.length) {
@@ -136,6 +168,7 @@ export const OpeningsView: React.FC = () => {
               if (autoRes.captured) sounds.playCapture();
               else sounds.playMove();
               setChess(autoChess);
+              setLastMove({ from: autoRes.from, to: autoRes.to });
               setCurrentStepIndex(nextIndex + 1);
 
               if (nextIndex + 1 >= movesSan.length) {
@@ -218,13 +251,14 @@ export const OpeningsView: React.FC = () => {
       </div>
 
       {/* Main Grid: Board + Opening Information */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         {/* Left: Interactive Chess Board */}
-        <div className="lg:col-span-6 flex flex-col items-center">
+        <div ref={leftColumnRef} className="lg:col-span-6 flex flex-col items-center">
           <ChessBoard
             chess={chess}
             onMove={handleTrainingMove}
             interactive={mode === 'treinar'}
+            lastMove={lastMove}
           />
 
           {/* Controls Bar for Explorar Mode */}
@@ -298,10 +332,13 @@ export const OpeningsView: React.FC = () => {
         </div>
 
         {/* Right: Theory, Main Lines & Opening Selector */}
-        <div className="lg:col-span-6 space-y-4">
+        <div
+          className="lg:col-span-6 flex flex-col gap-4 overflow-hidden min-h-0"
+          style={{ height: leftHeight ? `${leftHeight}px` : 'auto' }}
+        >
 
           {/* Linha Principal Moves List */}
-          <div className="bg-white rounded-3xl p-5 border border-[#DDE3EA] shadow-xs">
+          <div className="bg-white rounded-3xl p-5 border border-[#DDE3EA] shadow-xs flex-shrink-0">
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
               Linha Principal (PGN)
             </h3>
@@ -330,11 +367,12 @@ export const OpeningsView: React.FC = () => {
           </div>
 
           {/* Banco de Aberturas List Selector */}
-          <div className="bg-white rounded-3xl p-5 border border-[#DDE3EA] shadow-xs">
+          <div className="bg-white rounded-3xl p-5 border border-[#DDE3EA] shadow-xs flex-1 relative min-h-[300px]">
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
               Outras Aberturas no Banco ECO
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+            <div className="absolute inset-x-5 top-14 bottom-5 overflow-y-auto pr-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {OPENINGS_DATABASE.slice(1).map((op, idx) => (
                 <button
                   key={idx}
@@ -354,6 +392,7 @@ export const OpeningsView: React.FC = () => {
                   <ChevronRight className={`w-4 h-4 ${op.eco === selectedOpening.eco && op.name === selectedOpening.name ? 'text-white' : 'text-slate-400'}`} />
                 </button>
               ))}
+              </div>
             </div>
           </div>
         </div>

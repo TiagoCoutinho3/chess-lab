@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { PlayedGame, UserStats } from '../types';
 import { getStoredGames, getUserStats } from '../utils/storage';
 import { BotAvatar } from '../components/BotAvatar';
@@ -26,22 +26,52 @@ export const HistoryView: React.FC = () => {
   // Replay state
   const [replayChess, setReplayChess] = useState<Chess>(new Chess());
   const [replayMoveIndex, setReplayMoveIndex] = useState<number>(0);
+  const [replayLastMove, setReplayLastMove] = useState<{ from: string; to: string } | null>(null);
+  const rightColumnRef = useRef<HTMLDivElement>(null);
+  const [rightHeight, setRightHeight] = useState(0);
+
+  useEffect(() => {
+    const rightColumn = rightColumnRef.current;
+    if (!rightColumn) return;
+
+    const updateHeight = () => {
+      setRightHeight(rightColumn.getBoundingClientRect().height);
+    };
+
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(rightColumn);
+
+    return () => observer.disconnect();
+  }, []);
 
   const handleSelectGame = (game: PlayedGame) => {
     setSelectedGameForReplay(game);
     const newChess = new Chess();
     setReplayChess(newChess);
     setReplayMoveIndex(0);
+    setReplayLastMove(null);
   };
 
   const handleReplayStep = (index: number) => {
     if (!selectedGameForReplay) return;
     const targetChess = new Chess();
+    let lastMoveFrom = '';
+    let lastMoveTo = '';
     for (let i = 0; i <= index && i < selectedGameForReplay.moves.length; i++) {
-      targetChess.move(selectedGameForReplay.moves[i]);
+      const result = targetChess.move(selectedGameForReplay.moves[i]);
+      if (result) {
+        lastMoveFrom = result.from;
+        lastMoveTo = result.to;
+      }
     }
     setReplayChess(targetChess);
     setReplayMoveIndex(index + 1);
+    if (index >= 0 && lastMoveFrom && lastMoveTo) {
+      setReplayLastMove({ from: lastMoveFrom, to: lastMoveTo });
+    } else {
+      setReplayLastMove(null);
+    }
   };
 
   const winRate = stats.gamesPlayed > 0 ? Math.round((stats.wins / stats.gamesPlayed) * 100) : 0;
@@ -110,14 +140,13 @@ export const HistoryView: React.FC = () => {
       </div>
 
       {/* Main Grid: Game List + Replay Viewer */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         {/* Left: Games List */}
-        <div className="lg:col-span-6 space-y-3">
-          <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-            Partidas Salvas
-          </h2>
-
-          <div className="space-y-2.5">
+        <div
+          className="lg:col-span-6 relative min-h-[400px] flex-1"
+          style={{ height: rightHeight ? `${rightHeight}px` : 'auto' }}
+        >
+          <div className="absolute inset-0 overflow-y-auto pr-2 space-y-3">
             {games.map((game) => {
               const isSelected = selectedGameForReplay?.id === game.id;
               const isWin = game.result === '1-0' && game.playerColor === 'w' || game.result === '0-1' && game.playerColor === 'b';
@@ -181,7 +210,7 @@ export const HistoryView: React.FC = () => {
         </div>
 
         {/* Right: Interactive Replay Viewer */}
-        <div className="lg:col-span-6 space-y-4">
+        <div ref={rightColumnRef} className="lg:col-span-6 space-y-4">
           <div className="bg-white rounded-3xl p-5 border border-[#DDE3EA] shadow-xs">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
               <div>
@@ -198,7 +227,7 @@ export const HistoryView: React.FC = () => {
             </div>
 
             {/* Replay Board */}
-            <ChessBoard chess={replayChess} interactive={false} onMove={() => false} />
+            <ChessBoard chess={replayChess} interactive={false} onMove={() => false} lastMove={replayLastMove} />
 
             {/* Step Controls */}
             {selectedGameForReplay && (

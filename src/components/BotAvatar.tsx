@@ -5,7 +5,7 @@ import {
   getDefaultAvatarStyle,
 } from "../utils/avatarGenerator";
 import { getBotExpressions } from "../data/botAvatarExpressions";
-import { BOTS_LIST } from "../data/botsData";
+import { BOTS_LIST, personalityColors } from "../data/botsData";
 
 export type BotAvatarMood = "idle" | "speaking" | "angry" | "happy";
 
@@ -34,6 +34,10 @@ export const BotAvatar: React.FC<BotAvatarProps> = ({
     BOTS_LIST.find((bot) => bot.id === botId)?.avatarStyle ??
     getDefaultAvatarStyle(botId);
 
+  const personalityBgColor = bot
+    ? [personalityColors[bot.personality].bg.replace("#", "")]
+    : undefined;
+
   useEffect(() => {
     if (mood !== "speaking") {
       setSpeakingFrame(false);
@@ -52,6 +56,7 @@ export const BotAvatar: React.FC<BotAvatarProps> = ({
     if (mood === "idle") {
       return generateAvatarDataUri(seed, resolvedStyle, {
         animationVariant: "fastest",
+        backgroundColor: personalityBgColor,
         ...expressions.normal,
         mouthVariant: bot?.mouthVariant ?? "flat",
       });
@@ -63,6 +68,7 @@ export const BotAvatar: React.FC<BotAvatarProps> = ({
         : expressions.speakingClosed;
       return generateAvatarDataUri(seed, resolvedStyle, {
         animationVariant: "none",
+        backgroundColor: personalityBgColor,
         ...frameOptions,
       });
     }
@@ -70,6 +76,7 @@ export const BotAvatar: React.FC<BotAvatarProps> = ({
     if (mood === "angry") {
       return generateAvatarDataUri(seed, resolvedStyle, {
         animationVariant: "none",
+        backgroundColor: personalityBgColor,
         ...expressions.angry,
       });
     }
@@ -77,14 +84,16 @@ export const BotAvatar: React.FC<BotAvatarProps> = ({
     if (mood === "happy") {
       return generateAvatarDataUri(seed, resolvedStyle, {
         animationVariant: "none",
+        backgroundColor: personalityBgColor,
         ...expressions.happy,
       });
     }
 
     return generateAvatarDataUri(seed, resolvedStyle, {
       animationVariant: "none",
+      backgroundColor: personalityBgColor,
     });
-  }, [seed, resolvedStyle, mood, speakingFrame, expressions]);
+  }, [seed, resolvedStyle, mood, speakingFrame, expressions, personalityBgColor]);
 
   return <img src={src} alt={alt} className={className} draggable={false} />;
 };

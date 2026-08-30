@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Chess, Square, PieceSymbol, Color } from 'chess.js';
 import { PieceIcon } from './PieceIcon';
 import { sounds } from '../utils/audio';
+import { getHighlightColor } from '../utils/colorUtils';
 
 interface ChessBoardProps {
   chess: Chess;
@@ -212,8 +213,12 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
             let bgClass = '';
 
             if (isLastMoveSource || isLastMoveTarget) {
-              bgClass = isLight ? 'bg-[#FFF1C7]' : 'bg-[#FFE699]';
-              bgStyle = {};
+              const highlightColor = getHighlightColor(
+                boardColors.dark,
+                isLight
+              );
+              bgStyle = { backgroundColor: highlightColor };
+              bgClass = '';
             }
             if (isSelected) {
               bgClass = 'bg-[#EDE7FF] ring-2 ring-inset ring-[#8B5CF6]';

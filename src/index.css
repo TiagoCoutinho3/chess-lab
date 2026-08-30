@@ -36,13 +36,3 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #8AA7E1;
 }
-
-/* Custom animations */
-@keyframes pulse-subtle {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.85; transform: scale(1.03); }
-}
-
-.animate-pulse-subtle {
-  animation: pulse-subtle 2s infinite ease-in-out;
-}
