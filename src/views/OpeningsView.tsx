@@ -3,6 +3,7 @@ import { Opening } from '../types';
 import { OPENINGS_DATABASE } from '../data/openingsData';
 import { Chess, Square } from 'chess.js';
 import { ChessBoard } from '../components/ChessBoard';
+import { OpeningsTreeList } from '../components/OpeningsTreeList';
 import { sounds } from '../utils/audio';
 import {
   BookOpen,
@@ -367,32 +368,18 @@ export const OpeningsView: React.FC = () => {
           </div>
 
           {/* Banco de Aberturas List Selector */}
-          <div className="bg-white rounded-3xl p-5 border border-[#DDE3EA] shadow-xs flex-1 relative min-h-[300px]">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
-              Outras Aberturas no Banco ECO
-            </h3>
-            <div className="absolute inset-x-5 top-14 bottom-5 overflow-y-auto pr-1">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {OPENINGS_DATABASE.slice(1).map((op, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setSelectedOpening(op)}
-                  className={`p-3 rounded-2xl text-left border transition-all flex items-center justify-between ${
-                    op.eco === selectedOpening.eco && op.name === selectedOpening.name
-                      ? 'bg-[#8AA7E1] text-white border-[#8AA7E1] shadow-xs'
-                      : 'bg-[#F7F9FC] hover:bg-[#EDE7FF] border-[#DDE3EA] text-slate-700'
-                  }`}
-                >
-                  <div>
-                    <span className="font-bold text-xs block">{op.name}</span>
-                    <span className={`text-[10px] ${op.eco === selectedOpening.eco && op.name === selectedOpening.name ? 'text-white/80' : 'text-slate-400'}`}>
-                      {op.eco}
-                    </span>
-                  </div>
-                  <ChevronRight className={`w-4 h-4 ${op.eco === selectedOpening.eco && op.name === selectedOpening.name ? 'text-white' : 'text-slate-400'}`} />
-                </button>
-              ))}
-              </div>
+          <div className="bg-white rounded-3xl p-5 border border-[#DDE3EA] shadow-xs flex-1 flex flex-col min-h-[360px] overflow-hidden">
+            <div className="flex items-center justify-between mb-3 flex-shrink-0">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                Outras Aberturas no Banco ECO
+              </h3>
+            </div>
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <OpeningsTreeList
+                openings={OPENINGS_DATABASE.slice(1)}
+                selectedOpening={selectedOpening}
+                onSelectOpening={setSelectedOpening}
+              />
             </div>
           </div>
         </div>
