@@ -140,3 +140,78 @@ export function incrementPuzzleSolved(isCorrect: boolean) {
   }
   saveUserStats(stats);
 }
+
+const USER_AVATAR_KEY = 'chesslab_user_avatar';
+export const USER_AVATAR_UPDATED_EVENT = 'chesslab:avatar-updated';
+
+export function getUserAvatarOptions(): import('../types/avatar').VoxelAvatarOptions {
+  try {
+    const raw = localStorage.getItem(USER_AVATAR_KEY);
+    if (!raw) {
+      return {
+        topVariant: 'spiky',
+        topProbability: 100,
+        outfitVariant: 'hoodie',
+        eyesVariant: 'open',
+        mouthVariant: 'smile',
+        eyebrowsVariant: 'flat',
+        eyebrowsProbability: 100,
+        noseVariant: 'block',
+        beardVariant: 'none',
+        beardProbability: 0,
+        glassesVariant: 'none',
+        glassesProbability: 0,
+        cheeksVariant: 'none',
+        cheeksProbability: 0,
+        animationVariant: 'none',
+        skinColor: 'f5d0b0',
+        hairColor: '2c222b',
+        shirtColor: '228be6',
+        jacketColor: '3b5b8c',
+        hatColor: '8d95d6',
+        pantsColor: '3b5b8c',
+        shoesColor: 'f1f3f5',
+        backgroundColor: ['8aa7e1'],
+      };
+    }
+    return JSON.parse(raw);
+  } catch {
+    return {
+      topVariant: 'spiky',
+      topProbability: 100,
+      outfitVariant: 'hoodie',
+      eyesVariant: 'open',
+      mouthVariant: 'smile',
+      eyebrowsVariant: 'flat',
+      eyebrowsProbability: 100,
+      noseVariant: 'block',
+      beardVariant: 'none',
+      beardProbability: 0,
+      glassesVariant: 'none',
+      glassesProbability: 0,
+      cheeksVariant: 'none',
+      cheeksProbability: 0,
+      animationVariant: 'none',
+      skinColor: 'f5d0b0',
+      hairColor: '2c222b',
+      shirtColor: '228be6',
+      jacketColor: '3b5b8c',
+      hatColor: '8d95d6',
+      pantsColor: '3b5b8c',
+      shoesColor: 'f1f3f5',
+      backgroundColor: ['8aa7e1'],
+    };
+  }
+}
+
+export function saveUserAvatarOptions(options: import('../types/avatar').VoxelAvatarOptions) {
+  try {
+    localStorage.setItem(USER_AVATAR_KEY, JSON.stringify(options));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent(USER_AVATAR_UPDATED_EVENT, { detail: options }));
+    }
+  } catch (err) {
+    console.error('Failed to save avatar options', err);
+  }
+}
+

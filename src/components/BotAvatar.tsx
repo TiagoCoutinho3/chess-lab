@@ -2,10 +2,14 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   AvatarStyleName,
   generateAvatarDataUri,
+  generateVoxelAvatarDataUri,
   getDefaultAvatarStyle,
+  getUserAvatarOptions,
 } from "../utils/avatarGenerator";
+import { USER_AVATAR_UPDATED_EVENT } from "../utils/storage";
 import { getBotExpressions } from "../data/botAvatarExpressions";
 import { BOTS_LIST, personalityColors } from "../data/botsData";
+import { VoxelAvatarOptions } from "../types/avatar";
 
 export type BotAvatarMood = "idle" | "speaking" | "angry" | "happy";
 
@@ -107,14 +111,31 @@ export const PlayerAvatar: React.FC<PlayerAvatarProps> = ({
   className = "",
   alt = "Você",
 }) => {
+  const [options, setOptions] = useState<VoxelAvatarOptions>(() =>
+    getUserAvatarOptions()
+  );
+
+  useEffect(() => {
+    const handleAvatarUpdated = (e: Event) => {
+      const customEvent = e as CustomEvent<VoxelAvatarOptions>;
+      if (customEvent.detail) {
+        setOptions(customEvent.detail);
+      } else {
+        setOptions(getUserAvatarOptions());
+      }
+    };
+
+    window.addEventListener(USER_AVATAR_UPDATED_EVENT, handleAvatarUpdated);
+    return () => {
+      window.removeEventListener(USER_AVATAR_UPDATED_EVENT, handleAvatarUpdated);
+    };
+  }, []);
+
   const src = useMemo(
-    () =>
-      generateAvatarDataUri("ChessLabHero", "voxel-art", {
-        backgroundColor: ["8aa7e1"],
-        animationVariant: "none",
-      }),
-    [],
+    () => generateVoxelAvatarDataUri(options, 192),
+    [options]
   );
 
   return <img src={src} alt={alt} className={className} draggable={false} />;
 };
+

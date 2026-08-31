@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { ViewTab } from "../types";
 import { sounds } from "../utils/audio";
 import { PieceIcon } from "./PieceIcon";
+import { PlayerAvatar } from "./BotAvatar";
 import {
   Home,
   Swords,
@@ -12,15 +13,21 @@ import {
   VolumeX,
   Menu,
   X,
+  Sparkles,
 } from "lucide-react";
 
 interface HeaderProps {
   currentTab: ViewTab;
   onTabChange: (tab: ViewTab) => void;
   onOpenBotSelector?: () => void;
+  onOpenAvatarEditor?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ currentTab, onTabChange }) => {
+export const Header: React.FC<HeaderProps> = ({
+  currentTab,
+  onTabChange,
+  onOpenAvatarEditor,
+}) => {
   const [soundActive, setSoundActive] = useState<boolean>(sounds.isEnabled());
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
@@ -111,6 +118,28 @@ export const Header: React.FC<HeaderProps> = ({ currentTab, onTabChange }) => {
               )}
             </button>
 
+            {/* Clickable User Avatar (Profile / Avatar Editor Trigger) */}
+            <button
+              id="user-avatar-btn"
+              type="button"
+              onClick={onOpenAvatarEditor}
+              title="Personalizar seu Avatar Voxel"
+              className="group relative flex items-center gap-2 p-1.5 pr-2.5 sm:pr-3 rounded-2xl border border-[#DDE3EA] hover:border-[#8AA7E1] bg-white hover:bg-[#EDE7FF]/30 transition-all cursor-pointer shadow-xs hover:shadow-sm"
+            >
+              <div className="w-8 h-8 rounded-xl overflow-hidden bg-[#8AA7E1]/15 border border-[#8AA7E1]/30 p-0.5 group-hover:scale-105 transition-transform shrink-0">
+                <PlayerAvatar alt="Seu Avatar" className="w-full h-full object-contain" />
+              </div>
+              <div className="flex flex-col items-start text-left hidden sm:flex">
+                <span className="text-xs font-bold text-slate-800 leading-tight flex items-center gap-1">
+                  Você
+                  <Sparkles className="w-3 h-3 text-[#8AA7E1] opacity-0 group-hover:opacity-100 transition-opacity" />
+                </span>
+                <span className="text-[10px] font-semibold text-slate-400 leading-tight">
+                  Editar Avatar
+                </span>
+              </div>
+            </button>
+
             {/* Mobile Hamburger */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -149,10 +178,23 @@ export const Header: React.FC<HeaderProps> = ({ currentTab, onTabChange }) => {
                 </button>
               );
             })}
+
+            {/* Mobile Avatar Editor Item */}
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onOpenAvatarEditor?.();
+              }}
+              className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold transition-all text-left text-slate-700 hover:bg-[#EDE7FF]/40 border border-[#DDE3EA]/60 mt-1"
+            >
+              <div className="w-6 h-6 rounded-lg overflow-hidden bg-[#8AA7E1]/20 p-0.5 shrink-0">
+                <PlayerAvatar alt="Seu Avatar" className="w-full h-full object-contain" />
+              </div>
+              <span>Personalizar Avatar</span>
+            </button>
           </div>
         )}
       </div>
-
     </header>
   );
 };

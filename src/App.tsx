@@ -12,10 +12,12 @@ import { OpeningsView } from './views/OpeningsView';
 import { PuzzlesView } from './views/PuzzlesView';
 import { HistoryView } from './views/HistoryView';
 import { BOTS_LIST } from './data/botsData';
+import { AvatarEditorModal } from './components/AvatarEditor/AvatarEditorModal';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<ViewTab>('home');
   const [selectedBotForPlay, setSelectedBotForPlay] = useState<Bot>(BOTS_LIST[0]);
+  const [avatarEditorOpen, setAvatarEditorOpen] = useState(false);
 
   const handleSelectBotToPlay = (bot: Bot) => {
     setSelectedBotForPlay(bot);
@@ -25,7 +27,11 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#F7F9FC] text-[#1E293B] flex flex-col font-sans selection:bg-[#8AA7E1]/30">
       {/* Top Brand Header */}
-      <Header currentTab={currentTab} onTabChange={setCurrentTab} />
+      <Header
+        currentTab={currentTab}
+        onTabChange={setCurrentTab}
+        onOpenAvatarEditor={() => setAvatarEditorOpen(true)}
+      />
 
       {/* Main Content Area */}
       <main className={`flex-1 min-h-0 ${currentTab === 'play' ? 'overflow-y-auto pb-12' : 'pb-12'}`}>
@@ -42,6 +48,12 @@ export default function App() {
         {currentTab === 'puzzles' && <PuzzlesView />}
         {currentTab === 'history' && <HistoryView />}
       </main>
+
+      {/* Customizable Voxel Avatar Editor Modal */}
+      <AvatarEditorModal
+        isOpen={avatarEditorOpen}
+        onClose={() => setAvatarEditorOpen(false)}
+      />
 
       {/* Footer */}
       <footer className="border-t border-[#DDE3EA] bg-white/70 py-6 text-center text-xs text-slate-500">
