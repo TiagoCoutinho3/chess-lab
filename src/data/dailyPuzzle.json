@@ -1,35 +1,63 @@
 {
   "current": {
-    "date": "2026-09-17",
+    "date": "2026-09-18",
     "puzzle": {
-      "fen": "8/N1P1kp2/1p3p2/2b5/4P1B1/P3r1P1/1P3r2/R2K4 b - - 5 32",
+      "fen": "8/8/1p6/p1p2kPp/P6P/5K2/8/8 b - - 2 43",
       "moves": [
-        "e3g3",
-        "a7c8",
-        "e7f8",
-        "g4e2",
-        "f8g7",
-        "c8b6",
-        "c5b6",
-        "c7c8q",
-        "g3g1",
-        "d1d2",
-        "g1a1",
-        "c8g4"
+        "b6b5",
+        "a4b5",
+        "a5a4",
+        "b5b6",
+        "a4a3",
+        "b6b7",
+        "a3a2",
+        "b7b8q",
+        "a2a1q",
+        "b8c8",
+        "f5g6",
+        "c8g8"
       ],
-      "rating": 2575,
+      "rating": 2362,
       "themes": [
         "advancedPawn",
-        "advantage",
-        "clearance",
+        "crushing",
         "endgame",
+        "pawnEndgame",
         "promotion",
-        "quietMove",
         "veryLong"
       ]
     }
   },
   "history": [
+    {
+      "date": "2026-09-18",
+      "puzzle": {
+        "fen": "8/8/1p6/p1p2kPp/P6P/5K2/8/8 b - - 2 43",
+        "moves": [
+          "b6b5",
+          "a4b5",
+          "a5a4",
+          "b5b6",
+          "a4a3",
+          "b6b7",
+          "a3a2",
+          "b7b8q",
+          "a2a1q",
+          "b8c8",
+          "f5g6",
+          "c8g8"
+        ],
+        "rating": 2362,
+        "themes": [
+          "advancedPawn",
+          "crushing",
+          "endgame",
+          "pawnEndgame",
+          "promotion",
+          "veryLong"
+        ]
+      }
+    },
     {
       "date": "2026-09-17",
       "puzzle": {
