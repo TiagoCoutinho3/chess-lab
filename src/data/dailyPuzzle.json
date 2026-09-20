@@ -1,33 +1,59 @@
 {
   "current": {
-    "date": "2026-09-19",
+    "date": "2026-09-20",
     "puzzle": {
-      "fen": "6k1/6pp/3P1r2/Q3p3/8/P4qP1/7P/KR6 b - - 0 36",
+      "fen": "1Q4k1/p7/2q4p/1p4p1/4R3/2P3P1/r6P/6K1 b - - 1 36",
       "moves": [
-        "f6d6",
-        "b1b8",
+        "g8g7",
+        "e4e7",
+        "g7g6",
+        "b8g8",
+        "g6h5",
         "g8f7",
-        "a5c7",
-        "f7e6",
-        "b8e8",
-        "e6f5",
-        "g3g4",
-        "f5f4",
-        "c7d6",
-        "f3c3",
-        "a1b1"
+        "h5g4",
+        "h2h3",
+        "g4g3",
+        "e7e3",
+        "g3h4",
+        "f7a2"
       ],
-      "rating": 2345,
+      "rating": 2302,
       "themes": [
         "crushing",
         "endgame",
         "fork",
-        "master",
         "veryLong"
       ]
     }
   },
   "history": [
+    {
+      "date": "2026-09-20",
+      "puzzle": {
+        "fen": "1Q4k1/p7/2q4p/1p4p1/4R3/2P3P1/r6P/6K1 b - - 1 36",
+        "moves": [
+          "g8g7",
+          "e4e7",
+          "g7g6",
+          "b8g8",
+          "g6h5",
+          "g8f7",
+          "h5g4",
+          "h2h3",
+          "g4g3",
+          "e7e3",
+          "g3h4",
+          "f7a2"
+        ],
+        "rating": 2302,
+        "themes": [
+          "crushing",
+          "endgame",
+          "fork",
+          "veryLong"
+        ]
+      }
+    },
     {
       "date": "2026-09-19",
       "puzzle": {
