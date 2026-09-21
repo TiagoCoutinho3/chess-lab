@@ -1,32 +1,69 @@
 {
   "current": {
-    "date": "2026-09-20",
+    "date": "2026-09-21",
     "puzzle": {
-      "fen": "1Q4k1/p7/2q4p/1p4p1/4R3/2P3P1/r6P/6K1 b - - 1 36",
+      "fen": "8/8/4p1k1/5qp1/8/6QP/5PK1/8 w - - 13 94",
       "moves": [
-        "g8g7",
-        "e4e7",
-        "g7g6",
-        "b8g8",
-        "g6h5",
-        "g8f7",
-        "h5g4",
-        "h2h3",
-        "g4g3",
-        "e7e3",
-        "g3h4",
-        "f7a2"
+        "g3d6",
+        "f5d5",
+        "d6d5",
+        "e6d5",
+        "g2f3",
+        "g6f5",
+        "f3e3",
+        "f5e5",
+        "e3d3",
+        "d5d4",
+        "f2f3",
+        "e5d5"
       ],
-      "rating": 2302,
+      "rating": 2252,
       "themes": [
         "crushing",
+        "defensiveMove",
         "endgame",
-        "fork",
-        "veryLong"
+        "master",
+        "masterVsMaster",
+        "queenEndgame",
+        "quietMove",
+        "veryLong",
+        "zugzwang"
       ]
     }
   },
   "history": [
+    {
+      "date": "2026-09-21",
+      "puzzle": {
+        "fen": "8/8/4p1k1/5qp1/8/6QP/5PK1/8 w - - 13 94",
+        "moves": [
+          "g3d6",
+          "f5d5",
+          "d6d5",
+          "e6d5",
+          "g2f3",
+          "g6f5",
+          "f3e3",
+          "f5e5",
+          "e3d3",
+          "d5d4",
+          "f2f3",
+          "e5d5"
+        ],
+        "rating": 2252,
+        "themes": [
+          "crushing",
+          "defensiveMove",
+          "endgame",
+          "master",
+          "masterVsMaster",
+          "queenEndgame",
+          "quietMove",
+          "veryLong",
+          "zugzwang"
+        ]
+      }
+    },
     {
       "date": "2026-09-20",
       "puzzle": {
