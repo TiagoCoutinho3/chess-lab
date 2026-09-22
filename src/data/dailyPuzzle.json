@@ -1,37 +1,53 @@
 {
   "current": {
-    "date": "2026-09-21",
+    "date": "2026-09-22",
     "puzzle": {
-      "fen": "8/8/4p1k1/5qp1/8/6QP/5PK1/8 w - - 13 94",
+      "fen": "3rn1k1/p4pbp/1p2p1p1/q1r1P3/2P5/1R3BP1/P1Q1RP1P/B5K1 b - - 3 23",
       "moves": [
-        "g3d6",
-        "f5d5",
-        "d6d5",
-        "e6d5",
-        "g2f3",
-        "g6f5",
-        "f3e3",
-        "f5e5",
-        "e3d3",
-        "d5d4",
-        "f2f3",
-        "e5d5"
+        "g7e5",
+        "e2e5",
+        "c5e5",
+        "a1c3",
+        "a5c5",
+        "b3b5",
+        "c5c4",
+        "b5e5",
+        "d8d3",
+        "e5e3",
+        "d3e3",
+        "f2e3"
       ],
-      "rating": 2252,
+      "rating": 2221,
       "themes": [
-        "crushing",
-        "defensiveMove",
-        "endgame",
-        "master",
-        "masterVsMaster",
-        "queenEndgame",
-        "quietMove",
-        "veryLong",
-        "zugzwang"
+        "middlegame"
       ]
     }
   },
   "history": [
+    {
+      "date": "2026-09-22",
+      "puzzle": {
+        "fen": "3rn1k1/p4pbp/1p2p1p1/q1r1P3/2P5/1R3BP1/P1Q1RP1P/B5K1 b - - 3 23",
+        "moves": [
+          "g7e5",
+          "e2e5",
+          "c5e5",
+          "a1c3",
+          "a5c5",
+          "b3b5",
+          "c5c4",
+          "b5e5",
+          "d8d3",
+          "e5e3",
+          "d3e3",
+          "f2e3"
+        ],
+        "rating": 2221,
+        "themes": [
+          "middlegame"
+        ]
+      }
+    },
     {
       "date": "2026-09-21",
       "puzzle": {
