@@ -1,33 +1,65 @@
 {
   "current": {
-    "date": "2026-09-24",
+    "date": "2026-09-25",
     "puzzle": {
-      "fen": "7N/pp4pp/3Q1n2/8/6p1/2P1rk2/PP6/5K2 w - - 3 36",
+      "fen": "8/1pk3pp/3P4/pBP1rp2/8/r4P2/1R4PP/5K2 b - - 0 39",
       "moves": [
-        "d6h2",
-        "f6e4",
-        "h2g2",
-        "f3f4",
-        "g2c2",
-        "e4g3",
-        "f1g1",
-        "e3e1",
-        "g1f2",
-        "e1e2",
-        "c2e2",
-        "g3e2"
+        "c7d8",
+        "c5c6",
+        "b7c6",
+        "b5c6",
+        "d8c8",
+        "d6d7",
+        "c8c7",
+        "b2b7",
+        "c7c6",
+        "d7d8q",
+        "c6b7",
+        "d8d7"
       ],
-      "rating": 2153,
+      "rating": 1965,
       "themes": [
+        "advancedPawn",
         "advantage",
+        "deflection",
         "endgame",
         "exposedKing",
-        "fork",
+        "promotion",
         "veryLong"
       ]
     }
   },
   "history": [
+    {
+      "date": "2026-09-25",
+      "puzzle": {
+        "fen": "8/1pk3pp/3P4/pBP1rp2/8/r4P2/1R4PP/5K2 b - - 0 39",
+        "moves": [
+          "c7d8",
+          "c5c6",
+          "b7c6",
+          "b5c6",
+          "d8c8",
+          "d6d7",
+          "c8c7",
+          "b2b7",
+          "c7c6",
+          "d7d8q",
+          "c6b7",
+          "d8d7"
+        ],
+        "rating": 1965,
+        "themes": [
+          "advancedPawn",
+          "advantage",
+          "deflection",
+          "endgame",
+          "exposedKing",
+          "promotion",
+          "veryLong"
+        ]
+      }
+    },
     {
       "date": "2026-09-24",
       "puzzle": {
