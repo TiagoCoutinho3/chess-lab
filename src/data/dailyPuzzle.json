@@ -1,35 +1,87 @@
 {
   "current": {
-    "date": "2026-09-25",
+    "date": "2026-09-26",
     "puzzle": {
-      "fen": "8/1pk3pp/3P4/pBP1rp2/8/r4P2/1R4PP/5K2 b - - 0 39",
+      "fen": "8/1p4Q1/p1p5/P2r1k1P/1P6/4qpP1/2K5/3R4 w - - 4 62",
       "moves": [
-        "c7d8",
-        "c5c6",
-        "b7c6",
-        "b5c6",
-        "d8c8",
-        "d6d7",
-        "c8c7",
-        "b2b7",
-        "c7c6",
-        "d7d8q",
-        "c6b7",
-        "d8d7"
+        "g7f7",
+        "f5g4",
+        "d1d5",
+        "c6d5",
+        "f7d7",
+        "g4g3",
+        "d7g7",
+        "g3f2",
+        "h5h6",
+        "d5d4",
+        "h6h7",
+        "d4d3",
+        "c2b2",
+        "d3d2",
+        "h7h8q",
+        "d2d1q",
+        "h8h2",
+        "f2f1",
+        "h2h1",
+        "f1e2"
       ],
-      "rating": 1965,
+      "rating": 2755,
       "themes": [
         "advancedPawn",
-        "advantage",
-        "deflection",
+        "crushing",
+        "defensiveMove",
         "endgame",
         "exposedKing",
+        "master",
+        "masterVsMaster",
         "promotion",
+        "quietMove",
         "veryLong"
       ]
     }
   },
   "history": [
+    {
+      "date": "2026-09-26",
+      "puzzle": {
+        "fen": "8/1p4Q1/p1p5/P2r1k1P/1P6/4qpP1/2K5/3R4 w - - 4 62",
+        "moves": [
+          "g7f7",
+          "f5g4",
+          "d1d5",
+          "c6d5",
+          "f7d7",
+          "g4g3",
+          "d7g7",
+          "g3f2",
+          "h5h6",
+          "d5d4",
+          "h6h7",
+          "d4d3",
+          "c2b2",
+          "d3d2",
+          "h7h8q",
+          "d2d1q",
+          "h8h2",
+          "f2f1",
+          "h2h1",
+          "f1e2"
+        ],
+        "rating": 2755,
+        "themes": [
+          "advancedPawn",
+          "crushing",
+          "defensiveMove",
+          "endgame",
+          "exposedKing",
+          "master",
+          "masterVsMaster",
+          "promotion",
+          "quietMove",
+          "veryLong"
+        ]
+      }
+    },
     {
       "date": "2026-09-25",
       "puzzle": {
@@ -896,47 +948,6 @@
           "bishopEndgame",
           "crushing",
           "endgame",
-          "promotion",
-          "quietMove",
-          "veryLong"
-        ]
-      }
-    },
-    {
-      "date": "2026-08-27",
-      "puzzle": {
-        "fen": "8/1p4Q1/p1p5/P2r1k1P/1P6/4qpP1/2K5/3R4 w - - 4 62",
-        "moves": [
-          "g7f7",
-          "f5g4",
-          "d1d5",
-          "c6d5",
-          "f7d7",
-          "g4g3",
-          "d7g7",
-          "g3f2",
-          "h5h6",
-          "d5d4",
-          "h6h7",
-          "d4d3",
-          "c2b2",
-          "d3d2",
-          "h7h8q",
-          "d2d1q",
-          "h8h2",
-          "f2f1",
-          "h2h1",
-          "f1e2"
-        ],
-        "rating": 2755,
-        "themes": [
-          "advancedPawn",
-          "crushing",
-          "defensiveMove",
-          "endgame",
-          "exposedKing",
-          "master",
-          "masterVsMaster",
           "promotion",
           "quietMove",
           "veryLong"
